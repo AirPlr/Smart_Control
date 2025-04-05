@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Note Event</title>
+</head>
+<body>
+    <h1>Create Note Event for a Given Date</h1>
+    <form method="post">
+        {% csrf_token %}
+        <div>
+            <label for="date">Event Date:</label>
+            <input type="date" id="date" name="date" required>
+        </div>
+        <div>
+            <label for="note">Note:</label>
+            <textarea id="note" name="note" rows="4" cols="50"></textarea>
+        </div>
+        <button type="submit">Create Event</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifica Appuntamento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Modifica Appuntamento</h1>
+    <form action="{{ url_for('modify_appointments', id=appointment.id) }}" method="POST">
+        <label for="nome_cliente">Nome Cliente:</label>
+        <input type="text" id="nome_cliente" name="nome_cliente" value="{{ appointment.nome_cliente }}" required><br>
+
+        <label for="indirizzo">Indirizzo:</label>
+        <input type="text" id="indirizzo" name="indirizzo" value="{{ appointment.indirizzo }}" required><br>
+
+        <label for="numero_telefono">Numero Telefono:</label>
+        <input type="text" id="numero_telefono" name="numero_telefono" value="{{ appointment.numero_telefono }}" required><br>
+
+        <label for="note">Note:</label>
+        <textarea id="note" name="note">{{ appointment.note }}</textarea><br>
+
+        <label for="tipologia">Tipologia:</label>
+        <input type="text" id="tipologia" name="tipologia" value="{{ appointment.tipologia }}" required><br>
+
+        <label for="stato">Stato:</label>
+        <input type="text" id="stato" name="stato" value="{{ appointment.stato }}" required><br>
+
+        <label for="nominativi_raccolti">Nominativi Raccolti:</label>
+        <input type="number" id="nominativi_raccolti" name="nominativi_raccolti" value="{{ appointment.nominativi_raccolti }}"><br>
+
+        <label for="appuntamenti_personali">Appuntamenti Personali:</label>
+        <input type="number" id="appuntamenti_personali" name="appuntamenti_personali" value="{{ appointment.appuntamenti_personali }}"><br>
+
+        <label for="venduto">Venduto:</label>
+        <input type="checkbox" id="venduto" name="venduto" {% if appointment.venduto %}checked{% endif %}><br>
+
+        <label for="data_appuntamento">Data Appuntamento (YYYY-MM-DD):</label>
+        <input type="date" id="data_appuntamento" name="data_appuntamento" value="{{ appointment.data_appuntamento.strftime('%Y-%m-%d') }}" required><br>
+
+        <label for="data_richiamo">Data Richiamo (YYYY-MM-DD):</label>
+        <input type="date" id="data_richiamo" name="data_richiamo" value="{{ appointment.data_richiamo.strftime('%Y-%m-%d') if appointment.data_richiamo else '' }}"><br>
+
+        <label for="consultants">Consulenti:</label>
+        <select id="consultants" name="consultants" multiple required>
+            {% for consultant in consultants %}
+                <option value="{{ consultant.id }}" {% if consultant in appointment.consultants %}selected{% endif %}>{{ consultant.name }}</option>
+            {% endfor %}
+        </select><br>
+
+        <button type="submit">Modifica Appuntamento</button>
+    </form>
+</body>
+</html>

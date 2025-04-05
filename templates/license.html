@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>License Invalid</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LICENZA NON VALIDA</h1>
+        <p>Inserisci un nuovo codice di licenza.</p>
+        <form action="/submit-license" method="post">
+            <label for="license-key">Codice:</label>
+            <input type="text" id="license_code" name="license_code" required>
+            <button type="submit">Verifica</button>
+        </form>
+    </div>
+</body>
+</html>
