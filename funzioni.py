@@ -72,7 +72,7 @@ from reportlab.lib.utils import simpleSplit
 
 def genera_fattura(appointments, payments, person):
     from app import Consultant
-    provvigioni = (sum(float(payments.get(str(app.id), 0)) for app in appointments))*1.21862667
+    provvigioni = (sum(float(payments.get(str(app.id), 0)) for app in appointments) + float(payments.get('extra', 0)))*1.21862667
     acconto = float(payments.get('acconto', 0))
     ritenuta_imposta = (provvigioni * 0.78)*0.23  # 23% sul 78%
     ritenuta_inps = 0.0  # Se necessario calcolare dinamicamente

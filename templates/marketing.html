@@ -19,27 +19,95 @@
           </button>
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('index') }}">Controllo</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('provvigioni') }}">Provvigioni</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('marketing') }}">Marketing</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('settings') }}">Impostazioni</a>
-                </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('index') }}">Controllo</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('service') }}">Service</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('clients') }}">Clienti</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('calendar') }}">Calendario</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('provvigioni') }}">Provvigioni</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('marketing') }}">Marketing</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('settings') }}">Impostazioni</a>
+            </li>
             </ul>
           </div>
         </div>
     </nav>
 </div>
 </div>
-<p>TO DO: Add Whatsapp Business API integration</p>
-<p>TO DO: Add marketing Materials</p>
-make a server to host all the marketing materials separetly
+<div class="text-center my-4">
+  <a href="" class="btn btn-success">Gestione Whatsapp Business</a>
+</div>
+<div class="container my-5">
+  <h2 class="text-center mb-4">Crea il tuo codice QR</h2>
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="input-group mb-3">
+        <input type="text" id="qrText" class="form-control" placeholder="Inserisci il testo o URL">
+        <button class="btn btn-primary" id="generateQR">Genera QR Code</button>
+      </div>
+      <div id="qrcode" class="text-center"></div>
+    </div>
+  </div>
+</div>
+
+<div class="container my-5">
+  <h2 class="text-center mb-4">Porta il tuo business al prossimo livello</h2>
+  <p class="lead text-center">Promuovi la tua attività con strategie innovative e strumenti digitali avanzati. Scopri come la nostra piattaforma può aiutarti a raggiungere più clienti e aumentare le tue vendite.</p>
+  <div class="row text-center">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Strategia Digitale</h5>
+          <p class="card-text">Analizza il mercato e crea campagne efficaci.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Innovazione</h5>
+          <p class="card-text">Utilizza strumenti tecnologici per migliorare la tua presenza online.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Crescita</h5>
+          <p class="card-text">Incrementa le vendite con strategie mirate.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  document.getElementById('generateQR').addEventListener('click', function() {
+    var qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = '';
+    var text = document.getElementById('qrText').value;
+    if (text.trim() !== '') {
+      new QRCode(qrContainer, {
+        text: text,
+        width: 128,
+        height: 128
+      });
+    }
+  });
+</script>
 
 </body>
 </html>

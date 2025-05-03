@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Follow-ups di {{ client.nome }}{% endblock %}
+{% block content %}
+<h2>Follow-ups di {{ client.nome }}</h2>
+{% for app in appointments %}
+<div class="table-responsive mb-4">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Data Appuntamento</th>
+                {% for fu in app.followups %}
+                <th>
+                    {% if fu.numero == 1 %}
+                        Installazione Soft
+                    {% elif fu.numero == 2 %}
+                        Visita di benvenuto
+                    {% elif fu.numero >= 3 and fu.numero <= 13 %}
+                        Visita di cortesia {{ fu.numero - 2 }}
+                    {% elif fu.numero == 14 %}
+                        Fine della Garanzia
+                    {% endif %}
+                
+                </th>
+                {% endfor %}
+                <th>Agg. Anno</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ app.data_appuntamento.strftime('%d/%m/%Y') }} <hr> {{ app.numero_telefono }}</td>
+                {% for fu in app.followups %}
+                <td>
+                    {{ fu.data_prevista.strftime('%d/%m/%Y') }}
+                    {% if not fu.done %}
+                    <form action="{{ url_for('complete_followup', id=fu.id) }}" method="post" class="d-inline">
+                        <button class="btn btn-success btn-sm">Completa</button>
+                    </form>
+                    {% endif %}
+                    <form action="{{ url_for('edit_followup', id=fu.id) }}" method="post" class="d-inline">
+                        <input type="date" name="data_prevista" value="{{ fu.data_prevista.strftime('%Y-%m-%d') }}" class="form-control form-control-sm d-inline" style="width:auto;">
+                        <button class="btn btn-primary btn-sm">Salva</button>
+                    </form>
+                </td>
+                {% endfor %}
+                <td>
+                    <form action="{{ url_for('add_followup', id=app.id) }}" method="post">
+                        <button class="btn btn-success btn-sm">+</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+{% endblock %}

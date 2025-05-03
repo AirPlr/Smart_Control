@@ -39,8 +39,10 @@
             </tbody>
         </table>
         <div class="text-end" style="width: 15%;">
-            <input name="acconto" type="number" class="form-control" placeholder="Acconto" required>
+            <input name="acconto" type="number" class="form-control" placeholder="Acconto">
         </div>
+        <div class="text-end" style="width: 15%;">
+            <input name="extra" type="number" class="form-control" placeholder="Provvigioni extra">
         <hr>
         <input type="hidden" name="appointment_ids" value="{% for appointment in appointments %}{{ appointment.id }},{% endfor %}">
         <button type="submit" class="btn btn-primary">Stampa Pagamenti</button>

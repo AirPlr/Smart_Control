@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Console Server{% endblock %}
+
+{% block head %}
+<style>
+  #output {
+    background-color: #000;
+    color: #0f0;
+    font-family: 'Courier New', Courier, monospace;
+    border-radius: 5px;
+    border: 1px solid #333;
+    padding: 10px;
+  }
+  #command {
+    background-color: #222;
+    color: #0f0;
+    font-family: monospace;
+    border: 1px solid #333;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <h1>Console Server</h1>
+  <div class="mt-4">
+    <h2>Risultato</h2>
+    <pre id="output" class="bg-dark p-3" style="height:300px;overflow:auto;"></pre>
+  </div>
+  <form id="cmd-form">
+    <div class="mb-3">
+      <label for="command" class="form-label">Comando shell</label>
+      <div class="input-group">
+        <span class="input-group-text bg-dark" style="color: #0f0; display: flex; align-items: center;">$</span>
+        <input type="text" name="command" id="command" class="form-control" placeholder="$ Inserisci il comando da eseguire">
+      </div>
+    </div>
+    <button type="submit" id="run-btn" class="btn btn-primary">Esegui</button>
+  </form>
+
+
+
+  <!-- Load Socket.IO client -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+    const form = document.getElementById('cmd-form');
+    const outputEl = document.getElementById('output');
+    const runBtn = document.getElementById('run-btn');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const cmd = document.getElementById('command').value;
+      outputEl.textContent += '$ ' + cmd + '\n';  // add prompt
+      outputEl.scrollTop = outputEl.scrollHeight;  // autoscroll for prompt
+      runBtn.disabled = true;
+      socket.emit('run_command', { command: cmd });
+    });
+
+    socket.on('command_output', function(data) {
+      outputEl.textContent += data.output;
+      outputEl.scrollTop = outputEl.scrollHeight;
+    });
+
+    socket.on('command_done', function() {
+      runBtn.disabled = false;
+    });
+  </script>
+{% endblock %}

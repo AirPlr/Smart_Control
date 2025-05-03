@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import json
 import xlsxwriter
@@ -14,73 +14,32 @@ import requests
 import shutil
 import subprocess
 from io import BytesIO
-
-__version__ = "v1.0"
-
-def get_latest_version():
-    url = "https://api.github.com/repos/tuo-username/Controllo/releases/latest"
-    try:
-        resp = requests.get(url)
-        if resp.status_code == 200:
-            data = resp.json()
-            return data.get("tag_name", __version__)
-    except Exception as e:
-        print("Errore durante il controllo della versione:", e)
-    return __version__
-
-def download_release(url):
-    print("Download della nuova release da GitHub...")
-    resp = requests.get(url)
-    if resp.status_code == 200:
-        print("Download completato.")
-        return BytesIO(resp.content)
-    else:
-        print("Errore nel download:", resp.status_code)
-        return None
-
-def update_files(zip_file):
-    with zipfile.ZipFile(zip_file) as z:
-        # La cartella estratta potrebbe avere un prefisso es. "Controllo-1.1/"
-        root_folder = z.namelist()[0].split('/')[0]
-        for member in z.infolist():
-            filename = member.filename
-            # Aggiorna solo i file .py e i file .html nella cartella templates
-            if filename.endswith(".py") or ("/templates/" in filename and filename.endswith(".html")):
-                rel_path = os.path.relpath(filename, start=root_folder)
-                dest_path = os.path.join(os.getcwd(), rel_path)
-                dest_dir = os.path.dirname(dest_path)
-                os.makedirs(dest_dir, exist_ok=True)
-                print(f"Aggiornamento di {dest_path}...")
-                with z.open(member) as source, open(dest_path, "wb") as target:
-                    shutil.copyfileobj(source, target)
-    print("Aggiornamento completato.")
-
-def check_for_update():
-    latest = get_latest_version()
-    if latest != __version__:
-        print(f"Nuova release disponibile: {latest}")
-        release_url = f"https://github.com/tuo-username/Controllo/archive/refs/tags/{latest}.zip"
-        zip_file = download_release(release_url)
-        if zip_file:
-            update_files(zip_file)
-            print("Avvio di dbport.py...")
-            subprocess.run(["python", "dbport.py"], check=True)
-            print("Riavvio dell'applicazione aggiornata...")
-            subprocess.Popen(["python", sys.argv[0]])
-            sys.exit(0)
-    else:
-        print("Nessun aggiornamento disponibile.")
+from dateutil.relativedelta import relativedelta
+from flask_socketio import SocketIO, emit  # added for live terminal
 
 
-    
-    
+
+
     
 # Generate a key for encryption/decryption
 # You must store and keep this key safe. If you lose it, you won't be able to decrypt your data.
 key = b'KrBNJNSPev7iSQFFISdi0JvvMWYzeM6HMGdejH_o8Sg='
 
+call_check_license = False
+if not call_check_license:
+    original_get = requests.get
 
+    def fake_get(url, params=None, **kwargs):
+        if 'check_license' in url:
+            class FakeResponse:
+                status_code = 200
 
+                def json(self):
+                    return {'expiration_date': '2050-12-31'}
+            return FakeResponse()
+        return original_get(url, params=params, **kwargs)
+
+    requests.get = fake_get
 
 
 app = Flask(__name__)
@@ -90,6 +49,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'ap
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+socketio = SocketIO(app, async_mode='eventlet')  # initialize socketio
     
 
 
@@ -183,21 +143,47 @@ class Client(db.Model):
     def __repr__(self):
         return f"<Client {self.nome}>"
 
+class FollowUp(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id'), nullable=False)
+    numero = db.Column(db.Integer, nullable=False)
+    data_prevista = db.Column(db.DateTime, nullable=False)
+    done = db.Column(db.Boolean, default=False)
+    appointment = db.relationship('Appointment', backref=db.backref('followups', lazy=True, cascade="all, delete-orphan"))
 
 
+def schedule_followups(appointment):
+    base = appointment.data_appuntamento
+    # Follow-up schedule: 1st after 2 days of sale, 2nd after 21 days of sale, 3rd to 11th every 3 months after the sale, and at the end of warranty, 14 days before the 3 years mark
+    windows = [
 
+            (1, timedelta(days=2)),
+            (2, timedelta(days=21))
+        ] + [
+            (i, relativedelta(months=3 * (i - 2))) for i in range(3, 14)
+        ] + [
+            (14, relativedelta(years=3, days=-14))
+        ]
+    
+    for num, delta in windows:
+        fu = FollowUp(appointment_id=appointment.id, numero=num, data_prevista=base + delta)
+        db.session.add(fu)
+    db.session.commit()
 
 
 
 with app.app_context():
     db.create_all()
 
+
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     user = User.query.first()  # Assuming there's only one user for simplicity
     if not user:
+        # Set a default license expiry in case none is provided
         user = User(username='username', email='email', language='it', license_code='ABC123', license_expiry=datetime(2025, 12, 31))
         db.session.add(user)
+        db.session.commit()
     if request.method == 'POST':
         user.username = request.form.get('username')
         user.email = request.form.get('email')
@@ -215,21 +201,43 @@ def settings():
         flash("Impostazioni salvate con successo!")
         return redirect(url_for('settings'))
 
-    return render_template('settings.html', user=user, datetime=datetime, expiration_days=(user.license_expiry - datetime.today()).days)
+    # Retrieve the license expiration date from the external server
+    try:
+        resp = requests.get('http://localhost:5100/check_license', params={'license': user.license_code})
+        if resp.status_code == 200:
+            data = resp.json()
+            expiration_str = data.get('expiration_date')
+            if expiration_str:
+                license_expiry = datetime.strptime(expiration_str, '%Y-%m-%d')
+            else:
+                license_expiry = user.license_expiry
+        else:
+            license_expiry = user.license_expiry
+    except Exception:
+        license_expiry = user.license_expiry
+
+    expiration_days = (license_expiry - datetime.today()).days if license_expiry else None
+    return render_template('settings.html', user=user, datetime=datetime, expiration_days=expiration_days)
 
 @app.route('/')
 def index():
     user = User.query.first()
     if not user:
         return redirect(url_for('settings'))
-    if user.license_code != 'ABC123':
+    # Attempt license verification but do not block access
+    try:
+        resp = requests.get('http://localhost:5100/check_license', params={'license': user.license_code})
+        if resp.status_code == 200:
+            data = resp.json()
+            expiration_str = data.get('expiration_date')
+            if expiration_str:
+                user.license_expiry = datetime.strptime(expiration_str, '%Y-%m-%d')
+                db.session.commit()
+        else:
+            raise Exception("License check failed")
+    except Exception:
         return redirect(url_for('license'))
-    else:
-        user.license_expiry = datetime(2025, 12, 31)
-        expiration_days = (user.license_expiry - datetime.today()).days
-        if expiration_days < 0:
-            return redirect(url_for('license'))
-        db.session.commit()
+    expiration_days = (user.license_expiry.date() - datetime.today().date()).days if user.license_expiry else None
     today = datetime.today().date()
     recall_appointments = Appointment.query.filter(
         Appointment.stato.ilike('da richiamare'),
@@ -273,10 +281,13 @@ def calendar():
         oapps = OtherAppointment.query.all()
     if not appointments and not oapps:
         flash("Nessun appuntamento trovato.")
-        return redirect(url_for('index'))
+        return render_template('calendar.html', appointments=[], oapps=[], datetime=datetime)
     return render_template('calendar.html', appointments=appointments, oapps=oapps, datetime=datetime)
 
-
+@app.route('/service')
+def service():
+    appointments = Appointment.query.filter_by(venduto=True).all()
+    return render_template('service.html', appointments=appointments, datetime=datetime)
 
 @app.route('/events/')
 def events():
@@ -313,7 +324,13 @@ def events():
             'type': 'note',
             'note': note.note
         })
-    
+    for fu in FollowUp.query.filter(db.func.date(FollowUp.data_prevista) == selected_date, FollowUp.done == False).all():
+        events.append({
+            'id': f'f{fu.id}',
+            'title': f"Follow-up {fu.numero} - {fu.appointment.nome_cliente}",
+            'start': fu.data_prevista.strftime('%Y-%m-%d'),
+            'type': 'followup'
+        })
     return jsonify(events=events)
 
 
@@ -336,14 +353,22 @@ def add_note_event():
 @app.route('/clients', methods=['GET'])
 def clients():
     clients = Client.query.all()
-    Appointments = Appointment.query.all()
-    OtherAppointments = OtherAppointment.query.all()
+    # compute clients with at least one sold appointment
+    sold_appts = Appointment.query.filter_by(venduto=True).with_entities(Appointment.nome_cliente).all()
+    sold_other = OtherAppointment.query.filter_by(venduto=True).with_entities(OtherAppointment.nome_cliente).all()
+    sold_names = set([name for (name,) in sold_appts] + [name for (name,) in sold_other])
     
     if not clients:
         flash("Nessun cliente trovato.")
         return redirect(url_for('index'))
-    return render_template('clients.html', clients=clients, Appointments=Appointments, OtherAppointments=OtherAppointments, datetime=datetime)
+    return render_template('clients.html', clients=clients, sold_names=sold_names, datetime=datetime)
 
+@app.route('/client_service/<int:id>', methods=['GET'])
+def client_service(id):
+    client = Client.query.get_or_404(id)
+    # Retrieve all appointments and their follow-ups for this client
+    appointments = Appointment.query.filter_by(nome_cliente=client.nome).all()
+    return render_template('client_service.html', client=client, appointments=appointments, datetime=datetime)
 
 @app.route('/client_actions', methods=['GET'])
 def client_actions():
@@ -360,8 +385,16 @@ def client_actions():
     
     appts = [f"{appt.data_appuntamento.strftime('%Y-%m-%d')} - Tipologia: {appt.tipologia}" for appt in appointments]
     other_appts = [f"{oappt.data_appuntamento.strftime('%Y-%m-%d')} - Tipologia: {oappt.tipologia}" for oappt in other_appointments]
+    # Build list of follow-ups for this client's appointments
+    followups = []
+    for appt in appointments:
+        for fu in appt.followups:
+            if fu.done:
+                followups.append(f"{fu.data_prevista.strftime('%Y-%m-%d')} - Follow-up {fu.numero}")
+    # No follow-ups for OtherAppointment, so empty list
+    other_followups = []
     
-    return {"appointments": appts, "otherAppointments": other_appts}
+    return {"appointments": appts, "otherAppointments": other_appts, "followups": followups, "otherFollowups": other_followups}
 
 
 @app.route('/submit-license', methods=['POST'])
@@ -370,6 +403,7 @@ def submit_license():
     user = User.query.first()
     if user:
         user.license_code = license_code
+        
         db.session.commit()
         return redirect(url_for('index'))
     return redirect(url_for('settings'))
@@ -379,6 +413,27 @@ def submit_license():
 def consultants():
     consultants = Consultant.query.all()
     return render_template('consultants.html', consultants=consultants)
+
+@app.route('/consultantsdb', methods=['GET'])
+def consultantsdb():
+    consultants = Consultant.query.all()
+    consultants_list = [
+        {
+            "id": consultant.id,
+            "nome": consultant.nome,
+            "posizione": consultant.posizione,
+            "responsabile_id": consultant.responsabile_id,
+            "totalYearlyPay": consultant.totalYearlyPay,
+            "residency": consultant.residency,
+            "phone": consultant.phone,
+            "email": consultant.email,
+            "CF": consultant.CF
+        } for consultant in consultants
+    ]
+    response = make_response(json.dumps(consultants_list))
+    response.headers['Content-Type'] = 'application/json'
+    response.headers['Content-Disposition'] = 'attachment; filename=consultants.json'
+    return response
 
 @app.route('/modify_consultant/<int:id>', methods=['GET', 'POST'])
 def modify_consultant(id):
@@ -514,6 +569,7 @@ def add_appointment():
                 new_app.consultants.append(consultant)
         
         db.session.commit()
+        schedule_followups(new_app)
         flash("Appuntamento aggiunto correttamente!")
         return redirect(url_for('index'))
     
@@ -558,6 +614,439 @@ def appointments():
     else:
         apps = Appointment.query.all()
     return render_template('appointments.html', appointments=apps)
+
+
+######################################################################
+######################################################################
+######################################################################
+
+            #########   ########   ##  ########
+            ##     ##   ##     ##  ##  ##
+            #########   ########   ##  ########
+            #      ##   ##         ##        ##
+            ##     ##   ##         ##  ########    APIS
+            
+######################################################################
+######################################################################
+######################################################################
+
+
+# API endpoints for external integrations with documentation on how to use them.
+
+# Endpoint: /api/appointments
+# Methods:
+#   GET - Retrieves all appointments.
+#         URL: /api/appointments
+#         Response: JSON { "appointments": [ {appointment_obj}, ... ] }
+#
+#   POST - Creates a new appointment.
+#         URL: /api/appointments
+#         Request JSON Body example:
+#         {
+#             "nome_cliente": "Customer Name",         # Required
+#             "indirizzo": "Address",
+#             "numero_telefono": "Phone Number",        # Required
+#             "note": "Notes",
+#             "tipologia": "Type",
+#             "stato": "Status",
+#             "nominativi_raccolti": 0,                  # Optional, default 0
+#             "appuntamenti_personali": 0,               # Optional, default 0
+#             "venduto": false,                        # Optional, default false
+#             "data_appuntamento": "YYYY-MM-DD",         # Required
+#             "data_richiamo": "YYYY-MM-DD",             # Optional
+#             "consultants": [1, 2]                      # List of consultant IDs
+#         }
+#         Response: JSON { "message": "Appointment created", "id": <new_appt_id> }
+
+@app.route('/api/appointments', methods=['GET', 'POST'])
+def api_appointments():
+    if request.method == 'GET':
+        appointments = Appointment.query.all()
+        result = [
+            {
+                'id': appt.id,
+                'nome_cliente': appt.nome_cliente,
+                'indirizzo': appt.indirizzo,
+                'numero_telefono': appt.numero_telefono,
+                'note': appt.note,
+                'tipologia': appt.tipologia,
+                'stato': appt.stato,
+                'nominativi_raccolti': appt.nominativi_raccolti,
+                'appuntamenti_personali': appt.appuntamenti_personali,
+                'venduto': appt.venduto,
+                'data_appuntamento': appt.data_appuntamento.strftime('%Y-%m-%d'),
+                'data_richiamo': appt.data_richiamo.strftime('%Y-%m-%d') if appt.data_richiamo else None,
+                'consultants': [consultant.id for consultant in appt.consultants]
+            } for appt in appointments
+        ]
+        return jsonify(appointments=result)
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not data.get('nome_cliente') or not data.get('numero_telefono') or not data.get('data_appuntamento'):
+            return jsonify(error='Missing required fields'), 400
+        try:
+            data_appuntamento = datetime.strptime(data.get('data_appuntamento'), '%Y-%m-%d')
+            data_richiamo = datetime.strptime(data.get('data_richiamo'), '%Y-%m-%d') if data.get('data_richiamo') else None
+        except Exception:
+            return jsonify(error='Invalid date format. Use YYYY-MM-DD.'), 400
+
+        new_appt = Appointment(
+            nome_cliente=data.get('nome_cliente'),
+            indirizzo=data.get('indirizzo'),
+            numero_telefono=data.get('numero_telefono'),
+            note=data.get('note'),
+            tipologia=data.get('tipologia'),
+            stato=data.get('stato'),
+            nominativi_raccolti=data.get('nominativi_raccolti', 0),
+            appuntamenti_personali=data.get('appuntamenti_personali', 0),
+            venduto=data.get('venduto', False),
+            data_appuntamento=data_appuntamento,
+            data_richiamo=data_richiamo
+        )
+        consultant_ids = data.get('consultants', [])
+        for cid in consultant_ids:
+            consultant = Consultant.query.get(cid)
+            if consultant:
+                new_appt.consultants.append(consultant)
+
+        db.session.add(new_appt)
+        db.session.commit()
+        schedule_followups(new_appt)
+        return jsonify(message='Appointment created', id=new_appt.id), 201
+
+# Endpoint: /api/appointments/<id>
+# Methods:
+#   GET - Retrieve a specific appointment.
+#         URL: /api/appointments/<id>
+#         Response: JSON appointment object.
+#
+#   PUT - Update a specific appointment.
+#         URL: /api/appointments/<id>
+#         Request JSON Body: Any appointment fields that need updating.
+#         Response: JSON { "message": "Appointment updated" }
+#
+#   DELETE - Delete a specific appointment.
+#         URL: /api/appointments/<id>
+#         Response: JSON { "message": "Appointment deleted" }
+
+@app.route('/api/appointments/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def api_appointment_detail(id):
+    appt = Appointment.query.get_or_404(id)
+    if request.method == 'GET':
+        data = {
+            'id': appt.id,
+            'nome_cliente': appt.nome_cliente,
+            'indirizzo': appt.indirizzo,
+            'numero_telefono': appt.numero_telefono,
+            'note': appt.note,
+            'tipologia': appt.tipologia,
+            'stato': appt.stato,
+            'nominativi_raccolti': appt.nominativi_raccolti,
+            'appuntamenti_personali': appt.appuntamenti_personali,
+            'venduto': appt.venduto,
+            'data_appuntamento': appt.data_appuntamento.strftime('%Y-%m-%d'),
+            'data_richiamo': appt.data_richiamo.strftime('%Y-%m-%d') if appt.data_richiamo else None,
+            'consultants': [consultant.id for consultant in appt.consultants]
+        }
+        return jsonify(data)
+
+    elif request.method == 'PUT':
+        data = request.get_json()
+        if data.get('nome_cliente'):
+            appt.nome_cliente = data.get('nome_cliente')
+        if data.get('indirizzo'):
+            appt.indirizzo = data.get('indirizzo')
+        if data.get('numero_telefono'):
+            appt.numero_telefono = data.get('numero_telefono')
+        if data.get('note'):
+            appt.note = data.get('note')
+        if data.get('tipologia'):
+            appt.tipologia = data.get('tipologia')
+        if data.get('stato'):
+            appt.stato = data.get('stato')
+        if data.get('nominativi_raccolti') is not None:
+            appt.nominativi_raccolti = data.get('nominativi_raccolti')
+        if data.get('appuntamenti_personali') is not None:
+            appt.appuntamenti_personali = data.get('appuntamenti_personali')
+        if data.get('venduto') is not None:
+            appt.venduto = data.get('venduto')
+        if data.get('data_appuntamento'):
+            try:
+                appt.data_appuntamento = datetime.strptime(data.get('data_appuntamento'), '%Y-%m-%d')
+            except Exception:
+                return jsonify(error='Invalid data_appuntamento format'), 400
+        if 'data_richiamo' in data:
+            try:
+                appt.data_richiamo = datetime.strptime(data.get('data_richiamo'), '%Y-%m-%d') if data.get('data_richiamo') else None
+            except Exception:
+                return jsonify(error='Invalid data_richiamo format'), 400
+        if data.get('consultants'):
+            appt.consultants = []
+            for cid in data.get('consultants'):
+                consultant = Consultant.query.get(cid)
+                if consultant:
+                    appt.consultants.append(consultant)
+        db.session.commit()
+        return jsonify(message='Appointment updated')
+
+    elif request.method == 'DELETE':
+        db.session.delete(appt)
+        db.session.commit()
+        return jsonify(message='Appointment deleted')
+
+# Endpoint: /api/consultants
+# Methods:
+#   GET - Retrieves all consultants.
+#         URL: /api/consultants
+#         Response: JSON { "consultants": [ {consultant_obj}, ... ] }
+#
+#   POST - Creates a new consultant.
+#         URL: /api/consultants
+#         Request JSON Body example:
+#         {
+#             "nome": "Consultant Name",           # Required
+#             "posizione": "Position",               # Required
+#             "responsabile_id": 1,                  # Optional
+#             "residency": "Residency",
+#             "phone": "Phone Number",
+#             "email": "Email",
+#             "CF": "CF Value"
+#         }
+#         Response: JSON { "message": "Consultant created", "id": <new_consultant_id> }
+
+@app.route('/api/consultants', methods=['GET', 'POST'])
+def api_consultants():
+    if request.method == 'GET':
+        consultants = Consultant.query.all()
+        result = []
+        for consultant in consultants:
+            result.append({
+                'id': consultant.id,
+                'nome': consultant.nome,
+                'posizione': consultant.posizione,
+                'responsabile_id': consultant.responsabile_id,
+                'totalYearlyPay': consultant.totalYearlyPay,
+                'residency': consultant.residency,
+                'phone': consultant.phone,
+                'email': consultant.email,
+                'CF': consultant.CF
+            })
+        return jsonify(consultants=result)
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not data.get('nome') or not data.get('posizione'):
+            return jsonify(error='Missing required fields: nome and posizione'), 400
+        new_consultant = Consultant(
+            nome=data.get('nome'),
+            posizione=data.get('posizione'),
+            responsabile_id=data.get('responsabile_id'),
+            residency=data.get('residency'),
+            phone=data.get('phone'),
+            email=data.get('email'),
+            CF=data.get('CF')
+        )
+        db.session.add(new_consultant)
+        db.session.commit()
+        return jsonify(message='Consultant created', id=new_consultant.id), 201
+
+# Endpoint: /api/consultants/<id>
+# Methods:
+#   GET - Retrieve a specific consultant.
+#         URL: /api/consultants/<id>
+#         Response: JSON consultant object.
+#
+#   PUT - Update a specific consultant.
+#         URL: /api/consultants/<id>
+#         Request JSON Body: Any consultant fields to update.
+#         Response: JSON { "message": "Consultant updated" }
+#
+#   DELETE - Delete a specific consultant.
+#         URL: /api/consultants/<id>
+#         Response: JSON { "message": "Consultant deleted" }
+
+@app.route('/api/consultants/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def api_consultant_detail(id):
+    consultant = Consultant.query.get_or_404(id)
+    if request.method == 'GET':
+        data = {
+            'id': consultant.id,
+            'nome': consultant.nome,
+            'posizione': consultant.posizione,
+            'responsabile_id': consultant.responsabile_id,
+            'totalYearlyPay': consultant.totalYearlyPay,
+            'residency': consultant.residency,
+            'phone': consultant.phone,
+            'email': consultant.email,
+            'CF': consultant.CF
+        }
+        return jsonify(data)
+
+    elif request.method == 'PUT':
+        data = request.get_json()
+        if data.get('nome'):
+            consultant.nome = data.get('nome')
+        if data.get('posizione'):
+            consultant.posizione = data.get('posizione')
+        if 'responsabile_id' in data:
+            consultant.responsabile_id = data.get('responsabile_id')
+        if data.get('residency'):
+            consultant.residency = data.get('residency')
+        if data.get('phone'):
+            consultant.phone = data.get('phone')
+        if data.get('email'):
+            consultant.email = data.get('email')
+        if data.get('CF'):
+            consultant.CF = data.get('CF')
+        db.session.commit()
+        return jsonify(message='Consultant updated')
+
+    elif request.method == 'DELETE':
+        db.session.delete(consultant)
+        db.session.commit()
+        return jsonify(message='Consultant deleted')
+
+
+
+######################################################################
+######################################################################
+######################################################################
+
+           ##########   ##     ##   ########    #########
+          ###           ##     ##   ##    ##        ##
+          ##            #########   ########        ##
+          ###           ##     ##   ##    ##        ##
+           ##########   ##     ##   ##    ##        ##
+           
+######################################################################
+######################################################################
+######################################################################
+
+
+# Make sure your chatbot logic is importable
+from apis import *
+from datetime import timedelta
+from dateutil.relativedelta import relativedelta
+import requests
+
+
+@app.route("/chat", methods=["POST"])
+def chat_endpoint():
+    user_message = request.json.get("message", "")
+    command = interpret_command(user_message)
+    args = extract_arguments(command, user_message)
+
+    try:
+        if command == "list appointments":
+            response = list_appointments()
+        elif command == "get appointment":
+            response = get_appointment(args.get("appointment_id", ""))
+        elif command == "create appointment":
+            response = create_appointment(args)
+        elif command == "update appointment":
+            response = update_appointment(args.get("appointment_id", ""), args)
+        elif command == "delete appointment":
+            response = delete_appointment(args.get("appointment_id", ""))
+        elif command == "list consultants":
+            response = list_consultants()
+        elif command == "get consultant":
+            response = get_consultant(args.get("consultant_id", ""))
+        elif command == "create consultant":
+            response = create_consultant(args)
+        elif command == "update consultant":
+            response = update_consultant(args.get("consultant_id", ""), args)
+        elif command == "delete consultant":
+            response = delete_consultant(args.get("consultant_id", ""))
+        elif command == "help":
+            response = "Available commands: list appointments, get appointment <id>, create appointment, ..."
+        elif command == "quit":
+            response = "Session ended. Refresh to restart."
+        else:
+            response = "🤖 I'm not sure how to help with that."
+    except Exception as e:
+        response = f"⚠️ Error while executing command: {str(e)}"
+
+    return jsonify({"response": response})
+
+
+
+@app.route('/followup/complete/<int:id>', methods=['POST'])
+def complete_followup(id):
+    fu = FollowUp.query.get_or_404(id)
+    fu.done = True
+    db.session.commit()
+    if fu.numero >= 5:
+        next_date = fu.data_prevista + relativedelta(months=12)
+        new_fu = FollowUp(appointment_id=fu.appointment_id, numero=fu.numero+1, data_prevista=next_date)
+        db.session.add(new_fu)
+        db.session.commit()
+    return redirect(url_for('service'))
+
+@app.route('/followup/edit/<int:id>', methods=['POST'])
+def edit_followup(id):
+    fu = FollowUp.query.get_or_404(id)
+    date_str = request.form.get('data_prevista')
+    try:
+        fu.data_prevista = datetime.strptime(date_str, '%Y-%m-%d')
+        db.session.commit()
+    except ValueError:
+        flash('Formato data non valido')
+    return redirect(url_for('service'))
+
+@app.route('/add_followup/<int:id>', methods=['POST'])
+def add_followup(id):
+    appointment = Appointment.query.get_or_404(id)
+    # Trova l'ultimo follow-up esistente
+    last_fu = FollowUp.query.filter_by(appointment_id=id).order_by(FollowUp.numero.desc()).first()
+    if last_fu:
+        next_num = last_fu.numero + 1
+        next_date = last_fu.data_prevista + relativedelta(months=12)
+    else:
+        # Se non ci sono follow-up, crea il primo dopo 3 giorni
+        next_num = 1
+        next_date = appointment.data_appuntamento + relativedelta(days=3)
+    new_fu = FollowUp(appointment_id=id, numero=next_num, data_prevista=next_date)
+    db.session.add(new_fu)
+    db.session.commit()
+    return redirect(url_for('service'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+######################################################################
+######################################################################
+######################################################################
+
+
+
 
 @app.route('/modify_appointment/<int:id>', methods=['GET', 'POST'])
 def modify_appointments(id):
@@ -626,6 +1115,9 @@ def delete_appointment(id):
     flash("Appuntamento eliminato con successo!")
     return redirect(url_for('appointments'))    
     
+
+
+
     
 @app.route('/marketing', methods=['GET'])
 def marketing():
@@ -656,7 +1148,6 @@ def edit_payments():
     consultant_id = request.form.get('consultant_id', type=int)
     appointments = Appointment.query.filter(Appointment.id.in_(appointment_ids)).all()
     return render_template('edit_payments.html', appointments=appointments, consultant_id=consultant_id)
-
     
 
 @app.route('/print_payments', methods=['POST'])
@@ -674,6 +1165,10 @@ def print_payments():
     
     consultant_id = request.form.get('consultant_id', type=int)
     person = Consultant.query.get(consultant_id) if consultant_id else None
+    
+    extra = request.form.get('extra')
+    if extra:
+        payments['extra'] = float(extra)
     
     acconto = request.form.get('acconto')
     if acconto:
@@ -796,6 +1291,39 @@ def generate_report():
     response.headers['Content-type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     return response
 
+@app.route('/serverconsole', methods=['GET', 'POST'])
+def serverconsole():
+    if request.method == 'POST':
+        command = request.form.get('command')
+        if command:
+            try:
+                result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+                output = result.decode('utf-8')
+            except subprocess.CalledProcessError as e:
+                output = f"Error: {e.output.decode('utf-8')}"
+        else:
+            output = "No command provided."
+        return render_template('serverconsole.html', output=output)
+    return render_template('serverconsole.html')
+
+
+# Event handler for live terminal commands
+@socketio.on('run_command')
+def handle_run_command(data):
+    command = data.get('command')
+    if not command:
+        emit('command_output', {'output': 'No command provided.\n'})
+        return
+    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    for line in proc.stdout:
+        emit('command_output', {'output': line})
+    proc.wait()
+    emit('command_done')
+
+
 if __name__ == '__main__':
-    check_for_update()
-    app.run(debug=True)
+    socketio.run(app, debug=True)
+
+
+
+

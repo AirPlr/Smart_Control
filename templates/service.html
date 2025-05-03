@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        h1, h2 { font-family: 'Arial', sans-serif; }
+        .table thead th { background-color: #343a40; color: #ffffff; }
+        .btn { border-radius: 0.25rem; }
+        .alert { margin-top: 1rem; }
+        .floating-btn { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        
+        /* Chat popup styling */
+        #chat-popup {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            width: 300px;
+            max-height: 400px;
+            border: 1px solid #ccc;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            font-family: sans-serif;
+            z-index: 1050;
+        }
+        #chat-header {
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+        #chat-box {
+            padding: 10px;
+            overflow-y: auto;
+            height: 250px;
+            font-size: 0.9rem;
+        }
+        #chat-input {
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+        #chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-right: 1px solid #ddd;
+        }
+        #chat-input button {
+            padding: 10px;
+            border: none;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        #chat-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1051;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="img-fluid" style="max-width: 15%;">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Controllo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('service') }}">Service</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('clients') }}">Clienti</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('calendar') }}">Calendario</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('provvigioni') }}">Provvigioni</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('marketing') }}">Marketing</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('settings') }}">Impostazioni</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-4">
+        <h1>Service - Follow-ups</h1>
+
+        <!-- Search Bar -->
+        <div class="input-group mb-3">
+            <input type="text" id="search-input" class="form-control" placeholder="Cerca cliente">
+            <button class="btn btn-outline-secondary" id="filter-btn" type="button">Cerca</button>
+        </div>
+        
+        {% for app in appointments %}
+        <div class="table-responsive mb-4">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Data Appuntamento</th>
+                        {% for fu in app.followups %}
+                        <th>
+                            {% if fu.numero == 1 %}
+                                Installazione Soft
+                            {% elif fu.numero == 2 %}
+                                Visita di benvenuto
+                            {% elif fu.numero >= 3 and fu.numero <= 13 %}
+                                Visita di cortesia {{ fu.numero - 2 }}
+                            {% elif fu.numero == 14 %}
+                                Fine della Garanzia
+                            {% endif %}
+                        </th>
+                        {% endfor %}
+                        <th>Agg. Anno</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            {{ app.nome_cliente }}<hr>
+                            {{ app.numero_telefono }}
+                        </td>
+                        <td>{{ app.data_appuntamento.strftime('%d/%m/%Y') }}</td>
+                        {% for fu in app.followups %}
+                        <td>
+                            {{ fu.data_prevista.strftime('%d/%m/%Y') }}
+                            {% if not fu.done %}
+                            <form action="{{ url_for('complete_followup', id=fu.id) }}" method="post" class="d-inline">
+                                <button class="btn btn-success btn-sm">Completa</button>
+                            </form>
+                            {% endif %}
+                            <form action="{{ url_for('edit_followup', id=fu.id) }}" method="post" class="d-inline">
+                                <input type="date" name="data_prevista" value="{{ fu.data_prevista.strftime('%Y-%m-%d') }}" class="form-control form-control-sm d-inline" style="width:auto;">
+                                <button class="btn btn-primary btn-sm">Salva</button>
+                            </form>
+                        </td>
+                        {% endfor %}
+                        <td>
+                            <form action="{{ url_for('add_followup', id=app.id) }}" method="post">
+                                <button class="btn btn-success btn-sm">+</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+        
+        <button id="chat-toggle">💬</button>
+        <!-- Removed inline display style in favor of Bootstrap d-none -->
+        <div id="chat-popup" class="d-none">
+            <div id="chat-header">Chat</div>
+            <div id="chat-box"></div>
+            <div id="chat-input">
+                <input type="text" id="chat-message-input" placeholder="Scrivi un messaggio...">
+                <button id="chat-send-btn">Invia</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchInput = document.getElementById("search-input");
+            const filterBtn = document.getElementById("filter-btn");
+            // Process all table bodies found on the page
+            const tableBodies = document.querySelectorAll("table.table tbody");
+            const today = new Date();
+
+            filterBtn.addEventListener("click", () => {
+                tableBodies.forEach(tbody => {
+                    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+                    // Filter rows based on client name
+                    rows.forEach(row => {
+                        const client = row.cells[0].innerText.toLowerCase();
+                        row.style.display = client.includes(searchInput.value.toLowerCase()) ? "" : "none";
+                    });
+
+                    // Reorder visible rows: overdue follow-ups first
+                    const visibleRows = rows.filter(row => row.style.display !== "none");
+                    const table = tbody.closest("table");
+                    if (visibleRows.length === 0) {
+                        const thead = table.querySelector("thead");
+                        if (thead) {
+                            thead.remove();
+                        }
+                    }
+
+                    visibleRows.sort((a, b) => {
+                        // Check if any follow-up in a row is overdue
+                        const getEarliestOverdue = (row) => {
+                            let overdueDate = null;
+                            for (let i = 2; i < row.cells.length; i++) {
+                                const cell = row.cells[i];
+                                const completeBtn = cell.querySelector("button.btn-success");
+                                if (completeBtn) {
+                                    const dateText = cell.innerText.trim().split("\n")[0];
+                                    const [d, m, y] = dateText.split("/").map(Number);
+                                    const date = new Date(y, m - 1, d);
+                                    if (date < today && (!overdueDate || date < overdueDate)) {
+                                        overdueDate = date;
+                                    }
+                                }
+                            }
+                            return overdueDate;
+                        };
+
+                        const overdueA = getEarliestOverdue(a);
+                        const overdueB = getEarliestOverdue(b);
+
+                        if (overdueA && !overdueB) return -1;
+                        if (!overdueA && overdueB) return 1;
+                        return 0;
+                    });
+
+                    // Append sorted visible rows first then hidden rows
+                    const hiddenRows = rows.filter(row => row.style.display === "none");
+                    const sortedRows = [...visibleRows, ...hiddenRows];
+                    sortedRows.forEach(row => tbody.appendChild(row));
+                });
+            });
+
+            // Chat toggle and message handling
+            const chatPopup = document.getElementById('chat-popup');
+            const chatToggle = document.getElementById('chat-toggle');
+            const chatHeader = document.getElementById('chat-header');
+            const chatBox = document.getElementById('chat-box');
+            const chatInput = document.getElementById('chat-message-input');
+            const chatSendBtn = document.getElementById('chat-send-btn');
+
+            chatToggle.addEventListener('click', () => {
+                chatPopup.classList.toggle('d-none');
+            });
+            chatHeader.addEventListener('click', () => {
+                chatPopup.classList.add('d-none');
+            });
+            chatSendBtn.addEventListener('click', () => {
+                const message = chatInput.value.trim();
+                if (message) {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.textContent = message;
+                    chatBox.appendChild(msgDiv);
+                    chatInput.value = '';
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
