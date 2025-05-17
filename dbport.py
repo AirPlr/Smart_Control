@@ -1,4 +1,4 @@
-from app import db, User, Consultant, Appointment, app
+from app import db, User, Consultant, Appointment, Client, app
 from sqlalchemy import inspect
 
 def add_missing_columns(model):
@@ -29,6 +29,6 @@ if __name__ == "__main__":
     with app.app_context():
         print("Inizio aggiornamento schema database...")
         # Verifica ed aggiorna per ciascun modello
-        for model in [User, Consultant, Appointment]:
+        for model in [User, Consultant, Appointment, Client]:
             add_missing_columns(model)
         print("Aggiornamento completato.")

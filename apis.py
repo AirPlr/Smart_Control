@@ -6,6 +6,23 @@ from ollama import ChatResponse
 
 BASE_URL = "http://127.0.0.1:5000"
 
+def display_args(args: dict):
+    """Print each argument on its own line."""
+    if args:
+        print("Arguments:")
+        for key, value in args.items():
+            print(f"  {key}: {value}")
+    else:
+        print("No arguments provided.")
+
+def query_consultants(filters: dict) -> str:
+    """Query consultants with optional filters (e.g. name, position)."""
+    resp = requests.get(f"{BASE_URL}/api/consultants", params=filters)
+    if resp.ok:
+        consultants = resp.json().get("consultants", [])
+        return "\n".join(json.dumps(c, indent=2) for c in consultants)
+    return "Error querying consultants."
+
 def list_appointments():
     resp = requests.get(f"{BASE_URL}/api/appointments")
     if resp.ok:
@@ -240,45 +257,30 @@ def extract_arguments(command: str, message: str) -> dict:
     except json.JSONDecodeError:
         return {}
 
-
-
+def chat_server(message: str) -> str:
+    """Invia il messaggio al chatbot remoto tramite l'endpoint /chat"""
+    try:
+        resp = requests.post(f"{BASE_URL}/chat", json={"message": message})
+        if resp.ok:
+            return resp.json().get("response", "")
+        return f"Error contacting chatbot: {resp.status_code}"
+    except Exception as e:
+        return f"Request error: {e}"
 
 def main():
     print("Welcome to the Appointment and Consultant Smart Management System!")
-    print("The assistant is ready. Type 'help' to see available commands.\n")
+    print("The assistant is ready. Type 'help' to see available commands via chatbot.\n")
 
     while True:
         user_input = input("You: ")
-        command = interpret_command(user_input)
-
-        if command == "list appointments":
-            list_appointments()
-        elif command == "get appointment":
-            get_appointment()
-        elif command == "create appointment":
-            create_appointment()
-        elif command == "update appointment":
-            update_appointment()
-        elif command == "delete appointment":
-            delete_appointment()
-        elif command == "list consultants":
-            list_consultants()
-        elif command == "get consultant":
-            get_consultant()
-        elif command == "create consultant":
-            create_consultant()
-        elif command == "update consultant":
-            update_consultant()
-        elif command == "delete consultant":
-            delete_consultant()
-        elif command == "help":
-            show_help()
-        elif command == "quit":
-            print("Goodbye!")
+        if not user_input.strip():
+            continue
+        # Invia la query al chatbot remoto
+        response = chat_server(user_input)
+        print(response)
+        # Esci se il chatbot termina la sessione
+        if response.lower().startswith("session ended") or response.lower().startswith("goodbye"):
             break
-        else:
-            print("🤖 I'm not sure how to help with that.")
-
 
 if __name__ == "__main__":
     main()

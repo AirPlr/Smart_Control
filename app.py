@@ -26,6 +26,7 @@ from flask_socketio import SocketIO, emit  # added for live terminal
 key = b'KrBNJNSPev7iSQFFISdi0JvvMWYzeM6HMGdejH_o8Sg='
 
 call_check_license = False
+
 if not call_check_license:
     original_get = requests.get
 
@@ -139,6 +140,7 @@ class Client(db.Model):
     numero_telefono = db.Column(db.String(20), nullable=True)
     email = db.Column(db.String(100), nullable=True)
     data_registrazione = db.Column(db.DateTime, default=datetime.utcnow)
+    note= db.Column(db.Text, nullable=True)
 
     def __repr__(self):
         return f"<Client {self.nome}>"
@@ -352,16 +354,40 @@ def add_note_event():
 
 @app.route('/clients', methods=['GET'])
 def clients():
-    clients = Client.query.all()
+    all_clients = Client.query.all()
     # compute clients with at least one sold appointment
     sold_appts = Appointment.query.filter_by(venduto=True).with_entities(Appointment.nome_cliente).all()
     sold_other = OtherAppointment.query.filter_by(venduto=True).with_entities(OtherAppointment.nome_cliente).all()
     sold_names = set([name for (name,) in sold_appts] + [name for (name,) in sold_other])
-    
+    # handle search and venduto filters
+    search = request.args.get('search', '').strip().lower()
+    venduto_arg = request.args.get('venduto')  # 'true', 'false', or None
+    filtered = []
+    for client in all_clients:
+        # aggregate searchable fields
+        fields = [
+            client.nome,
+            client.indirizzo or '', client.numero_telefono or '', client.email or '',
+            client.data_registrazione.strftime('%d/%m/%Y'),
+            client.note or ''
+        ]
+        text = ' '.join(fields).lower()
+        # search match
+        if search and search not in text:
+            continue
+        # venduto filter
+        if venduto_arg == 'true' and client.nome not in sold_names:
+            continue
+        if venduto_arg == 'false' and client.nome in sold_names:
+            continue
+        filtered.append(client)
+    clients = filtered
     if not clients:
         flash("Nessun cliente trovato.")
         return redirect(url_for('index'))
-    return render_template('clients.html', clients=clients, sold_names=sold_names, datetime=datetime)
+    return render_template('clients.html', clients=clients, sold_names=sold_names, datetime=datetime,
+                           search=search, venduto=venduto_arg)
+
 
 @app.route('/client_service/<int:id>', methods=['GET'])
 def client_service(id):
@@ -524,8 +550,11 @@ def add_appointment():
         # Check if the client exists; if not, add the new client.
         client = Client.query.filter_by(nome=nome_cliente).first()
         if not client:
-            new_client = Client(nome=nome_cliente, indirizzo=indirizzo, numero_telefono=numero_telefono)
+            new_client = Client(nome=nome_cliente, indirizzo=indirizzo, numero_telefono=numero_telefono, note=note)
             db.session.add(new_client)
+            db.session.commit()
+        else:
+            client.note = note
             db.session.commit()
         
         if tipologia.lower() not in ['assistenza', 'dimostrazione']:
@@ -1012,7 +1041,14 @@ def add_followup(id):
     return redirect(url_for('service'))
 
 
-
+@app.route('/update_client_note', methods=['POST'])
+def update_client_note():
+    client_id = request.form.get('id', type=int)
+    new_note = request.form.get('note')
+    client = Client.query.get_or_404(client_id)
+    client.note = new_note
+    db.session.commit()
+    return jsonify(success=True)
 
 
 

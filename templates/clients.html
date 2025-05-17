@@ -48,13 +48,41 @@
         <h2>Clienti</h2>
         <!-- Search Bar -->
         <div class="mb-3">
-            <input type="text" class="form-control" id="searchInput" placeholder="Cerca cliente">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchInput" placeholder="Cerca cliente" value="{{ search or '' }}">
+                <button class="btn btn-secondary" type="button" id="filterBtn">Filtri</button>
+                <button class="btn btn-primary" type="button" id="goBtn">Vai</button>
+            </div>
         </div>
         <ul class="list-group" id="clientList">
             {% for client in clients %}
-            <li class="list-group-item client-item d-flex justify-content-between align-items-center" data-id="{{ client.id }}" data-name="{{ client.nome }}">
+            <li class="list-group-item client-item d-flex justify-content-between align-items-start"
+                data-id="{{ client.id }}"
+                data-name="{{ client.nome }}"
+                data-address="{{ client.indirizzo or '' }}"
+                data-phone="{{ client.numero_telefono or '' }}"
+                data-email="{{ client.email or '' }}"
+                data-registrazione="{{ client.data_registrazione.strftime('%d/%m/%Y') }}"
+                data-note="{{ client.note or '' }}"
+                data-consultants="{% if client.consultants %}{% for c in client.consultants %}{{ c.nome }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+                data-venduto="{{ 'true' if client.nome in sold_names else 'false' }}">
                 <div>
-                    {{ client.nome }}
+                    <h5><b>{{ client.nome }}</b></h5>
+
+                    <div class="mb-2 text-sm">
+                        <span class="me-2"><strong>Indirizzo:</strong> {{ client.indirizzo or 'N/D' }}</span>
+                        <span class="mx-2">|</span>
+                        <span class="me-2"><strong>Telefono:</strong> {{ client.numero_telefono or 'N/D' }}</span>
+                        <span class="mx-2">|</span>
+                        <span class="me-2"><strong>Email:</strong> {{ client.email or 'N/D' }}</span>
+                        <span class="mx-2">|</span>
+                        <span><strong>Registrazione:</strong> {{ client.data_registrazione.strftime('%d/%m/%Y') }}</span>
+                        <span class="mx-2">|</span>
+                        <span class="me-2"><strong>Note:</strong> <button type="button" class="btn btn-link p-0 note-edit-btn" data-id="{{ client.id }}">{{ client.note or 'N/D' }}</button></span>
+                    </div>
+                    
+                    
+                  
                     {% if client.nome in sold_names %}
                         <span class="badge bg-success ms-2">Venduto</span>
                     {% else %}
@@ -68,6 +96,7 @@
                         </div>
                     {% endif %}
                 </div>
+                
                 <a href="{{ url_for('client_service', id=client.id) }}" class="btn btn-primary btn-sm">Follow-ups</a>
             </li>
             {% endfor %}
@@ -94,6 +123,52 @@
         </div>
     </div>
 
+    <!-- Note Edit Modal -->
+    <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="noteModalLabel">Modifica Note</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <textarea id="noteTextarea" class="form-control" rows="5"></textarea>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+            <button type="button" class="btn btn-info" id="printNoteBtn">Stampa Note</button>
+            <button type="button" class="btn btn-primary" id="saveNoteBtn">Salva</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="filterModalLabel">Filtri Ricerca</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="filterVenduto" {% if venduto=='true' %}checked{% endif %}>
+              <label class="form-check-label" for="filterVenduto">Solo Venduti</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="filterNonVenduto" {% if venduto=='false' %}checked{% endif %}>
+              <label class="form-check-label" for="filterNonVenduto">Solo Non Venduti</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+            <button type="button" class="btn btn-primary" id="applyFiltersBtn">Applica Filtri</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- JS: jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <!-- Bootstrap 5 Bundle (includes Popper) -->
@@ -101,6 +176,19 @@
 
     <script>
         $(document).ready(function(){
+            // setup filters with server values
+            var filters = { venduto: null };
+            // initial search input
+            var serverSearch = "{{ search or '' }}";
+            $('#searchInput').val(serverSearch);
+            // initial venduto filters
+            var serverVend = "{{ venduto or '' }}";
+            if(serverVend === 'true') { filters.venduto = true; $('#filterVenduto').prop('checked', true); }
+            else if(serverVend === 'false') { filters.venduto = false; $('#filterNonVenduto').prop('checked', true); }
+
+            // Apri il modal dei filtri
+            $('#filterBtn').on('click', function(){ $('#filterModal').modal('show'); });
+
             // Show client actions modal on click
             $('.client-item').on('click', function(){
                 var clientId = $(this).data('id');
@@ -154,16 +242,83 @@
             });
 
             // Filter clients based on search input
-            $('#searchInput').on('keyup', function(){
-                var query = $(this).val().toLowerCase();
+            $('#searchInput').on('keyup', filterClients);
+            // trigger search on Enter key
+            $('#searchInput').on('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); $('#goBtn').click(); }});
+
+            // Apply selected filters
+            $('#applyFiltersBtn').on('click', function(){
+                // venduto filter
+                var sold = $('#filterVenduto').is(':checked');
+                var unsold = $('#filterNonVenduto').is(':checked');
+                if(sold && !unsold) filters.venduto = true;
+                else if(!sold && unsold) filters.venduto = false;
+                else filters.venduto = null;
+                $('#filterModal').modal('hide');
+                filterClients();
+            });
+
+            // Redirect to filtered page on Vai click
+            $('#goBtn').on('click', function(){
+                var q = $('#searchInput').val();
+                var params = new URLSearchParams();
+                if(q) params.append('search', q);
+                if(filters.venduto !== null) params.append('venduto', filters.venduto);
+                window.location.href = "{{ url_for('clients') }}?" + params.toString();
+            });
+
+            // unified filtering function
+            function filterClients(){
+                var q = $('#searchInput').val().toLowerCase();
                 $('.client-item').each(function(){
-                    var clientName = $(this).data('name').toLowerCase();
-                    if(clientName.indexOf(query) !== -1){
-                        $(this).show();
-                    } else {
-                        $(this).hide();
+                    var data = $(this).data();
+                    var text = [data.name, data.address, data.phone, data.email, data.registrazione, data.note].join(' ').toLowerCase();
+                    var matchQ = !q || text.indexOf(q) !== -1;
+                    var matchVend = filters.venduto===null || (filters.venduto === true && data.venduto) || (filters.venduto === false && !data.venduto);
+                    if(matchQ && matchVend) $(this).show(); else $(this).hide();
+                });
+            }
+
+            // Show note edit modal on click
+            $('.note-edit-btn').on('click', function(e){
+                e.stopPropagation();
+                var clientId = $(this).data('id');
+                var noteText = $(this).text() === 'N/D' ? '' : $(this).text();
+                $('#noteTextarea').val(noteText);
+                $('#noteModal').data('clientId', clientId).modal('show');
+            });
+
+            // Save note changes
+            $('#saveNoteBtn').on('click', function(){
+                var clientId = $('#noteModal').data('clientId');
+                var newNote = $('#noteTextarea').val();
+                $.post('/update_client_note', { id: clientId, note: newNote }, function(resp){
+                    if(resp.success){
+                        $('button.note-edit-btn[data-id="'+clientId+'"]').text(newNote || 'N/D');
+                        $('#noteModal').modal('hide');
                     }
                 });
+            });
+
+            // Print note content
+            $('#printNoteBtn').on('click', function(){
+                var noteContent = $('#noteTextarea').val();
+                var printWindow = window.open('', '', 'height=400,width=600');
+                var clientId = $('#noteModal').data('clientId');
+                var clientItem = $('.client-item[data-id="' + clientId + '"]');
+                var clientName = clientItem.data('name');
+                var clientAddress = clientItem.data('address') || clientItem.find("strong:contains('Indirizzo:')").parent().text().replace('Indirizzo: ', '').split('|')[0].trim();
+
+                printWindow.document.write(
+                    '<!doctype html><html><head><title>Nota</title></head><body>' +
+                        '<h4>' + clientName + '</h4>' +
+                        '<p><strong>Indirizzo:</strong> ' + clientAddress + '</p>' +
+                        '<pre>' + noteContent + '</pre>' +
+                    '</body></html>'
+                );
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
             });
         });
     </script>
