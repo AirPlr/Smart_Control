@@ -75,7 +75,10 @@ def genera_fattura(appointments, payments, person):
     provvigioni = (sum(float(payments.get(str(app.id), 0)) for app in appointments) + float(payments.get('extra', 0)))*1.21862667
     acconto = float(payments.get('acconto', 0))
     ritenuta_imposta = (provvigioni * 0.78)*0.23  # 23% sul 78%
-    ritenuta_inps = 0.0  # Se necessario calcolare dinamicamente
+    if person and person.totalYearlyPay > 5000:
+        ritenuta_inps = provvigioni * 0.22 / 3
+    else:
+        ritenuta_inps = 0.0
     saldo = provvigioni - ritenuta_imposta - ritenuta_inps - acconto
     
     esenzione_inps = person.totalYearlyPay * 1.22 if person else 0.0
@@ -164,3 +167,31 @@ def genera_fattura(appointments, payments, person):
     c.save()
     buffer.seek(0)
     return buffer.getvalue()
+
+
+
+def get_device_informations():
+    import platform
+    import socket
+    import psutil
+
+    device_info = {
+        "OS": platform.system(),
+        "OS Version": platform.version(),
+        "Machine": platform.machine(),
+        "Processor": platform.processor(),
+        "Hostname": socket.gethostname(),
+        "IP Address": socket.gethostbyname(socket.gethostname()),
+        "RAM Size (GB)": round(psutil.virtual_memory().total / (1024 ** 3), 2),
+        "CPU Cores": psutil.cpu_count(logical=True),
+        "CPU Usage (%)": psutil.cpu_percent(interval=1),
+        "Disk Usage (%)": psutil.disk_usage('/').percent,
+        "Disk Size (GB)": round(psutil.disk_usage('/').total / (1024 ** 3), 2),
+        "Disk Free Space (GB)": round(psutil.disk_usage('/').free / (1024 ** 3), 2)
+        
+        }
+    
+    return device_info
+
+
+print(get_device_informations())

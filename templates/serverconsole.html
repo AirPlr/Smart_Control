@@ -38,7 +38,43 @@
     <button type="submit" id="run-btn" class="btn btn-primary">Esegui</button>
   </form>
 
-
+  <div class="mt-4" style="display:flex; align-items:center; justify-content:space-between; width:100%; background-color:#222; padding:10px; border-radius:5px; border:1px solid #333; color:#FFF;">
+    <span><b>Operating System:</b> <span id="os-name"></span></span>
+    <span><b>Version:</b> <span id="os-version"></span></span>
+    <span><b>Architecture:</b> <span id="os-arch"></span></span>
+    <span><b>CPU:</b> <span id="cpu-name"></span></span>
+    <span><b>Cores:</b> <span id="cpu-cores"></span></span>
+    <span><b>RAM:</b> <span id="ram-size"></span></span>
+    <span><b>Disk:</b> <span id="disk-size"></span></span>
+    <span style="display:inline-flex;align-items:center;">
+      <svg width="60" height="60" viewBox="0 0 36 36" style="margin-right:5px;">
+        <path stroke="#333" stroke-width="3" fill="none"
+              d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path id="cpu-usage-arc" stroke="#0f0" stroke-width="3" fill="none" stroke-dasharray="0,100"
+              d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+        <text id="cpu-usage-text" x="18" y="20.35" fill="#0f0" font-size="8" text-anchor="middle">0%</text>
+      </svg>
+      <b>CPU Usage</b>
+    </span>
+    <span style="display:inline-flex;align-items:center;">
+      <svg width="60" height="60" viewBox="0 0 36 36" style="margin-right:5px;">
+        <path stroke="#333" stroke-width="3" fill="none"
+              d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path id="disk-usage-arc" stroke="#f00" stroke-width="3" fill="none" stroke-dasharray="0,100"
+              d="M18 2.0845
+                 a 15.9155 15.9155 0 0 1 0 31.831
+                 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+        <text id="disk-usage-text" x="18" y="20.35" fill="#f00" font-size="8" text-anchor="middle">0%</text>
+      </svg>
+      <b>Disk Usage</b>
+    </span>
+  </div>
 
   <!-- Load Socket.IO client -->
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
@@ -65,5 +101,27 @@
     socket.on('command_done', function() {
       runBtn.disabled = false;
     });
+
+    function fetchSystemInfo() {
+      fetch('/system_info')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('os-name').textContent = data.OS;
+          document.getElementById('os-version').textContent = data["OS Version"];
+          document.getElementById('os-arch').textContent = data.Machine;
+          document.getElementById('cpu-name').textContent = data.Processor;
+          document.getElementById('cpu-cores').textContent = data["CPU Cores"];
+          document.getElementById('ram-size').textContent = data["RAM Size (GB)"];
+          document.getElementById('disk-size').textContent = data["Disk Size (GB)"];
+          document.getElementById('cpu-usage-arc').setAttribute('stroke-dasharray', data["CPU Usage (%)"] + ',100');
+          document.getElementById('cpu-usage-text').textContent = data["CPU Usage (%)"] + '%';
+          document.getElementById('disk-usage-arc').setAttribute('stroke-dasharray', data["Disk Usage (%)"] + ',100');
+          document.getElementById('disk-usage-text').textContent = data["Disk Usage (%)"] + '%';
+        })
+        .catch(error => console.error('Errore nel recupero delle informazioni di sistema:', error));
+    }
+
+    // Recupera le informazioni di sistema al caricamento della pagina
+    window.onload = fetchSystemInfo;
   </script>
 {% endblock %}

@@ -19,15 +19,10 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Posizione</label>
-                    <select class="form-select" name="posizione" value="{{ consultant.posizione }}">
-                        <option value="1">Managers Main Office</option>
-                        <option value="2">Assistenza: Tecnici Main Office</option>
-                        <option value="3">Social Media</option>
-                        <option value="4">Dealers Con Campionario Main Office</option>
-                        <option value="5">Consulenti DPS Main Office</option>
-                        <option value="6">Consulenti Kirby Life</option>
-                        <option value="7">DT+Managers+Dealers Ufficio di Carmagnola</option>
-                        <option value="8">Campionari da Ritirare</option>
+                    <select class="form-select" name="posizione_id">
+                        {% for pos in positions %}
+                        <option value="{{ pos.id }}" {% if consultant.posizione_id == pos.id %}selected{% endif %}>{{ pos.nome }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="mb-3">

@@ -21,32 +21,12 @@
                 {% for consultant in consultants %}
                 <tr>
                     <td>{{ consultant.nome }}</td>
-                    <td>
-                        {% if consultant.posizione == '1' %}
-                            Managers Main Office
-                        {% elif consultant.posizione == '2' %}
-                            Assistenza: Tecnici Main Office
-                        {% elif consultant.posizione == '3' %}
-                            Social Media
-                        {% elif consultant.posizione == '4' %}
-                            Dealers Con Campionario Main Office
-                        {% elif consultant.posizione == '5' %}
-                            Consulenti DPS Main Office
-                        {% elif consultant.posizione == '6' %}
-                            Consulenti Kirby Life
-                        {% elif consultant.posizione == '7' %}
-                            D.T. + Managers + Dealers Ufficio di Carmagnola
-                        {% elif consultant.posizione == '8' %}
-                            Campionari da Ritirare
-                        {% else %}
-                            Unknown Position
-                        {% endif %}
-                    </td>
-                    <td>{%for consulente in consultants%}
-                        {%if consultant.responsabile_id==consulente.id%}
+                    <td>{{ consultant.posizione.nome if consultant.posizione else 'Nessuna posizione' }}</td>
+                    <td>{% for consulente in consultants %}
+                        {% if consultant.responsabile_id==consulente.id %}
                         {{consulente.nome}}
-                        {%endif%}
-                        {%endfor%}
+                        {% endif %}
+                        {% endfor %}
                     </td>
                     <td>
                         <a href="{{ url_for('modify_consultant', id=consultant.id) }}" class="btn btn-primary btn-sm">Modify</a>

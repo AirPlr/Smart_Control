@@ -16,6 +16,10 @@ import subprocess
 from io import BytesIO
 from dateutil.relativedelta import relativedelta
 from flask_socketio import SocketIO, emit  # added for live terminal
+import platform
+import psutil
+import socket
+from theme_tools import patch_css, CSS_PATH
 
 
 
@@ -76,10 +80,18 @@ class User(db.Model):
     def __repr__(self):
         return f"<User {self.username}, {self.email}, {self.language}, {self.license_code}>"
 
+class Position(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False, unique=True)
+
+    def __repr__(self):
+        return f"<Position {self.nome}>"
+
 class Consultant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-    posizione = db.Column(db.String(20), nullable=False)
+    posizione_id = db.Column(db.Integer, db.ForeignKey('position.id'), nullable=False)
+    posizione = db.relationship('Position', backref='consultants')
     responsabile_id = db.Column(db.Integer, db.ForeignKey('consultant.id'), nullable=True)
     responsabili = db.relationship('Consultant', remote_side=[id], backref='subordinati')
     totalYearlyPay = db.Column(db.Float, default=0.0)
@@ -89,7 +101,7 @@ class Consultant(db.Model):
     CF = db.Column(db.String(16), nullable=True)
 
     def __repr__(self):
-        return f"<Consultant {self.nome}, {self.posizione}, {self.responsabile_id}>"
+        return f"<Consultant {self.nome}, {self.posizione.nome if self.posizione else 'Nessuna posizione'}, {self.responsabile_id}>"
 
 appointment_consultant = db.Table('appointment_consultant',
     db.Column('appointment_id', db.Integer, db.ForeignKey('appointment.id'), primary_key=True),
@@ -465,9 +477,11 @@ def consultantsdb():
 def modify_consultant(id):
     consultant = Consultant.query.get(id)
     consultants = Consultant.query.all()
+    positions = Position.query.all()
     if request.method == 'POST':
         consultant.nome = request.form.get('nome')
-        consultant.posizione = request.form.get('posizione')
+        posizione_id = request.form.get('posizione_id', type=int)
+        consultant.posizione_id = posizione_id if posizione_id else get_or_create_default_position().id
         consultant.responsabile_id = request.form.get('responsabile_id')
         consultant.residency = request.form.get('residency')
         consultant.phone = request.form.get('phone')
@@ -476,7 +490,34 @@ def modify_consultant(id):
         db.session.commit()
         flash("Consulente modificato con successo!")
         return redirect(url_for('consultants'))
-    return render_template('modify_consultant.html', consultant=consultant, consultants=consultants)
+    return render_template('modify_consultant.html', consultant=consultant, consultants=consultants, positions=positions)
+
+# Endpoint per gestire le posizioni (aggiungi, elimina)
+@app.route('/positions', methods=['GET', 'POST', 'DELETE'])
+def manage_positions():
+    if request.method == 'POST':
+        nome = request.form.get('nome')
+        if nome:
+            pos = Position(nome=nome)
+            db.session.add(pos)
+            db.session.commit()
+            return jsonify({'success': True, 'id': pos.id, 'nome': pos.nome})
+        return jsonify({'success': False, 'error': 'Nome mancante'}), 400
+    elif request.method == 'DELETE':
+        pos_id = request.form.get('id', type=int)
+        pos = Position.query.get(pos_id)
+        if pos:
+            default = get_or_create_default_position()
+            for consultant in pos.consultants:
+                consultant.posizione_id = default.id
+            db.session.delete(pos)
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'error': 'Posizione non trovata'}), 404
+    else:
+        positions = Position.query.all()
+        return jsonify([{'id': p.id, 'nome': p.nome} for p in positions])
+
 
 @app.route('/license', methods=['GET'])
 def license():
@@ -607,9 +648,10 @@ def add_appointment():
 @app.route('/add_consultant', methods=['GET', 'POST'])
 def add_consultant():
     consultants = Consultant.query.all()
+    positions = Position.query.all()
     if request.method == 'POST':
         nome = request.form.get('nome')
-        posizione = request.form.get('posizione')
+        posizione_id = request.form.get('posizione_id', type=int)
         responsabile_id = request.form.get('responsabile_id')
         residency = request.form.get('residency')
         phone = request.form.get('phone')
@@ -618,15 +660,14 @@ def add_consultant():
         if not nome:
             flash("Il nome del consulente è obbligatorio!")
             return redirect(url_for('add_consultant'))
-        if not posizione:
-            flash("La posizione del consulente è obbligatoria!")
-            return redirect(url_for('add_consultant'))
-        new_consultant = Consultant(nome=nome, posizione=posizione, responsabile_id=responsabile_id, residency=residency, phone=phone, email=email, CF=CF)
+        if not posizione_id:
+            posizione_id = get_or_create_default_position().id
+        new_consultant = Consultant(nome=nome, posizione_id=posizione_id, responsabile_id=responsabile_id, residency=residency, phone=phone, email=email, CF=CF)
         db.session.add(new_consultant)
         db.session.commit()
         flash("Consulente aggiunto con successo!")
         return redirect(url_for('index'))
-    return render_template('add_consultant.html', consultants=consultants)
+    return render_template('add_consultant.html', consultants=consultants, positions=positions)
 
 @app.route('/appointments', methods=['GET'])
 def appointments():
@@ -869,7 +910,7 @@ def api_consultants():
             return jsonify(error='Missing required fields: nome and posizione'), 400
         new_consultant = Consultant(
             nome=data.get('nome'),
-            posizione=data.get('posizione'),
+            posizione_id=data.get('posizione_id'),
             responsabile_id=data.get('responsabile_id'),
             residency=data.get('residency'),
             phone=data.get('phone'),
@@ -937,7 +978,7 @@ def api_consultant_detail(id):
         return jsonify(message='Consultant deleted')
 
 
-
+'''
 ######################################################################
 ######################################################################
 ######################################################################
@@ -1050,6 +1091,14 @@ def update_client_note():
     db.session.commit()
     return jsonify(success=True)
 
+# Utility per ottenere o creare la posizione "Nessuna posizione"
+def get_or_create_default_position():
+    default = Position.query.filter_by(nome="Nessuna posizione").first()
+    if not default:
+        default = Position(nome="Nessuna posizione")
+        db.session.add(default)
+        db.session.commit()
+    return default
 
 
 
@@ -1081,8 +1130,15 @@ def update_client_note():
 ######################################################################
 ######################################################################
 
-
-
+'''
+# Utility per ottenere o creare la posizione "Nessuna posizione"
+def get_or_create_default_position():
+    default = Position.query.filter_by(nome="Nessuna posizione").first()
+    if not default:
+        default = Position(nome="Nessuna posizione")
+        db.session.add(default)
+        db.session.commit()
+    return default
 
 @app.route('/modify_appointment/<int:id>', methods=['GET', 'POST'])
 def modify_appointments(id):
@@ -1355,6 +1411,73 @@ def handle_run_command(data):
         emit('command_output', {'output': line})
     proc.wait()
     emit('command_done')
+
+
+@app.route('/system_info', methods=['GET'])
+def system_info():
+    info = {
+        "OS": platform.system(),
+        "OS Version": platform.version(),
+        "Machine": platform.machine(),
+        "Processor": platform.processor(),
+        "Hostname": socket.gethostname(),
+        "IP Address": socket.gethostbyname(socket.gethostname()),
+        "RAM Size (GB)": round(psutil.virtual_memory().total / (1024 ** 3), 2),
+        "CPU Cores": psutil.cpu_count(logical=True),
+        "CPU Usage (%)": psutil.cpu_percent(interval=1),
+        "Disk Usage (%)": psutil.disk_usage('/').percent,
+        "Disk Size (GB)": round(psutil.disk_usage('/').total / (1024 ** 3), 2),
+        "Disk Free Space (GB)": round(psutil.disk_usage('/').free / (1024 ** 3), 2)
+    }
+    return jsonify(info)
+
+root_block = '''
+:root {
+--main-btn-radius: 10px;
+--main-btn-padding: 10px 10px;
+--main-btn-font: 18px;
+--main-navbar-radius: 0px;
+--main-btn-margin-bottom: 30px;
+}
+
+.spaced-section {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+    }
+
+.container {
+    padding: 1.5rem !important;
+    border-radius: 20px;
+}
+
+h1 {
+    margin-top: 32px;
+  }
+'''
+
+@app.route('/set_theme', methods=['POST'])
+def set_theme():
+    data = request.get_json()
+    theme = data.get('theme')
+    mode = data.get('mode')  # 'light' o 'dark'
+    patch_css()  # Aggiorna il CSS con il blocco base
+    # Dopo patch_css, aggiorna anche tutti i 'button' inline se necessario
+    # (nessuna azione extra richiesta perché ora la regola button è inclusa nel THEME_BLOCK)
+    with open(CSS_PATH, 'r', encoding='utf-8') as f:
+        css = f.read()
+    # Rimuovi eventuali classi tema precedenti
+    for t in ['theme-dark', 'theme-sunny', 'theme-blue', 'theme-sunset', 'theme-dark-dark', 'theme-sunny-dark', 'theme-blue-dark', 'theme-sunset-dark']:
+        css = css.replace(f':root.{t}', ':root')
+    # Applica la classe tema selezionata
+    if theme in ['dark', 'sunny', 'blue', 'sunset']:
+        if mode == 'dark':
+            css = css.replace(':root {', f':root.theme-{theme}-dark {{')
+        else:
+            css = css.replace(':root {', f':root.theme-{theme} {{')
+    # Aggiorna il CSS
+    with open(CSS_PATH, 'w', encoding='utf-8') as f:
+        f.write(root_block + css)
+    return jsonify({'success': True})
 
 
 if __name__ == '__main__':

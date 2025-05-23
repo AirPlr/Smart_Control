@@ -1,4 +1,4 @@
-from app import db, User, Consultant, Appointment, Client, app
+from app import db, User, Consultant, Appointment, Client, Position, app
 from sqlalchemy import inspect
 
 def add_missing_columns(model):
@@ -24,11 +24,17 @@ def add_missing_columns(model):
             except Exception as e:
                 print(f"Errore durante l'aggiunta della colonna '{column.name}' a '{table_name}': {e}")
 
+def create_new_tables():
+    # Crea le tabelle se non esistono già
+    db.create_all()
+
+
 if __name__ == "__main__":
     from app import app  # Assicurati di importare l'app
     with app.app_context():
         print("Inizio aggiornamento schema database...")
         # Verifica ed aggiorna per ciascun modello
-        for model in [User, Consultant, Appointment, Client]:
+        for model in [User, Consultant, Appointment, Client, Position]:
+            
             add_missing_columns(model)
         print("Aggiornamento completato.")

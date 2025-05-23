@@ -1,28 +1,10 @@
+import os
 
-:root {
---main-btn-radius: 10px;
---main-btn-padding: 10px 10px;
---main-btn-font: 18px;
---main-navbar-radius: 0px;
---main-btn-margin-bottom: 30px;
-}
+CSS_PATH = os.path.join(os.path.dirname(__file__), 'static', 'styles.css')
 
-.spaced-section {
-        margin-top: 3rem;
-        margin-bottom: 3rem;
-    }
-
-.container {
-    padding: 1.5rem !important;
-    border-radius: 20px;
-}
-
-h1 {
-    margin-top: 32px;
-  }
-
+THEME_BLOCK = '''
 /* === THEME & LAYOUT CUSTOMIZATION === */
-:root.theme-sunset-dark {
+:root {
   --main-btn-radius: 20px;
   --main-btn-padding: 20px 20px;
   --main-btn-font: 18px;
@@ -331,4 +313,28 @@ body {
 
 
 
+'''
 
+root_block = '''
+:root {
+--main-btn-radius: 20px;
+--main-btn-padding: 20px 20px;
+--main-btn-font: 18px;
+--main-navbar-radius: 0px;
+}
+
+
+'''
+
+def patch_css():
+    css = ""
+    # Remove previous theme block if present
+    
+    css =THEME_BLOCK + '\n' + css
+    with open(CSS_PATH, 'w', encoding='utf-8') as f:
+        f.write(css)
+    print('Theme and layout CSS injected!')
+
+if __name__ == '__main__':
+    patch_css()
+    print('Done.')

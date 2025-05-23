@@ -7,27 +7,148 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(120deg,rgb(53, 53, 53) 0%,rgb(127, 127, 127) 100%);
+            background: linear-gradient(120deg, #232526 0%, #414345 100%);
             min-height: 100vh;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
         }
-        .list-group-item {
-            border: 0;
-            transition: background-color 0.15s;
+        .card {
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
+            border: none;
         }
-        .list-group-item:hover {
-            background-color: #ffe0cc;
+        .card-title {
+            color: #2c3e50;
+            letter-spacing: 0.5px;
+        }
+        .nav-pills .nav-link {
+            border-radius: 12px;
+            color: #232526;
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+        }
+        .nav-pills .nav-link.active, .nav-pills .nav-link:hover {
+            background: linear-gradient(90deg, #ffb347 0%, #ffcc80 100%);
+            color: #232526;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(255,179,71,0.10);
         }
         .settings-section {
             display: none;
+            animation: fadeIn 0.4s;
         }
         .settings-section.active {
             display: block;
         }
-        .card {
-            border-radius: 15px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            box-shadow: none;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #ffb347;
+            box-shadow: 0 0 0 0.15rem rgba(255,179,71,0.15);
+        }
+        .btn-secondary {
+            background: linear-gradient(90deg, #232526 0%, #414345 100%);
+            border: none;
+            border-radius: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .btn-secondary:hover, .btn-secondary:focus {
+            background: linear-gradient(90deg, #ffb347 0%, #ffcc80 100%);
+            color: #232526;
+            box-shadow: 0 2px 12px rgba(255,179,71,0.15);
         }
         .btn-success {
             border-radius: 15px;
+        }
+        .shadow {
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08) !important;
+        }
+        .text-secondary {
+            color: #ffb347 !important;
+            font-weight: 700;
+        }
+        .container {
+            max-width: 1100px;
+        }
+        .mb-3 label {
+            margin-bottom: 0.3rem;
+        }
+        .settings-section h2 {
+            margin-bottom: 1.5rem;
+        }
+        .nav-pills {
+            gap: 0.5rem;
+        }
+        .category-list {
+            cursor: pointer;
+        }
+        @media (max-width: 767px) {
+            .container {
+                padding: 0 0.5rem;
+            }
+            .card {
+                margin-bottom: 1.5rem;
+            }
+        }
+        .theme-preview {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            margin-right: 10px;
+            display: inline-block;
+            cursor: pointer;
+            transition: border 0.2s;
+        }
+        .theme-preview.selected {
+            border: 2.5px solid #ffb347;
+        }
+        .mode-select img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #ccc;
+            cursor: pointer;
+        }
+        .mode-select img.selected {
+            border-color: #ffb347;
+        }
+        .mode-select.selected {
+            border: 2.5px solid #ffb347;
+            background: linear-gradient(90deg, #ffb347 0%, #ffcc80 100%);
+            color: #232526;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(255,179,71,0.10);
+            border-radius: 12px;
+        }
+        .theme-dark {
+            background: linear-gradient(120deg, #232526 0%, #414345 100%);
+        }
+        .theme-sunny {
+            background: linear-gradient(120deg, #ffb347 0%, #ffcc80 100%);
+        }
+        .theme-blue {
+            background: linear-gradient(120deg, #2193b0 0%, #6dd5ed 100%);
+        }
+        .theme-sunset {
+            background: linear-gradient(120deg, #e96443 0%, #904e95 100%);
+        }
+        .dark-mode {
+            color: #fff;
         }
     </style>
 </head>
@@ -44,7 +165,8 @@
                             <a class="nav-link mb-1 category-list" data-target="#license-settings" href="#">Licenza</a>
                             <a class="nav-link mb-1 category-list" data-target="#company-settings" href="#">Azienda</a>
                             <a class="nav-link mb-1 category-list" data-target="#marketing-settings" href="#">Marketing</a>
-                            <a class="nav-link category-list" data-target="#help-settings" href="#">Aiuto</a>
+                            <a class="nav-link mb-1 category-list" data-target="#customization-settings" href="#">Personalizzazione</a>
+                            <a class="nav-link mb-1 category-list" data-target="#positions-settings" href="#">Posizioni</a>
                         </div>
                     </div>
                 </div>
@@ -111,14 +233,57 @@
                             <label class="form-label">Codice API Whatsapp Business</label>
                         </div>
                         
-                        <!-- Help Settings -->
-                        <div id="help-settings" class="settings-section">
-                            <h2 class="text-secondary">Aiuto</h2>
-                            <p>Per assistenza contattare il supporto tecnico.</p>
-                            <p>Email: kidias2012@gmail.com</p>
-                            <p>Telefono: 333 333 3333</p>
-                            <p>Indirizzo: Via Avezzano 147, 67068 Scurcola Marsicana</p>
+                        <!-- Customization Settings -->
+                        <div id="customization-settings" class="settings-section">
+                            <h2 class="text-secondary">Personalizzazione</h2>
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <div class="mb-3">
+                                        <label class="form-label">Tema Preset</label>
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="theme-preview me-2" data-theme="dark" style="background: linear-gradient(120deg,#232526 0%,#414345 100%); width: 36px; height: 36px; border-radius: 50%;"></div>
+                                            <div class="theme-preview me-2" data-theme="sunny" style="background: linear-gradient(120deg,#ffb347 0%,#ffcc80 100%); width: 36px; height: 36px; border-radius: 50%;"></div>
+                                            <div class="theme-preview me-2" data-theme="blue" style="background: linear-gradient(120deg,#2193b0 0%,#6dd5ed 100%); width: 36px; height: 36px; border-radius: 50%;"></div>
+                                            <div class="theme-preview me-2" data-theme="sunset" style="background: linear-gradient(120deg,#e96443 0%,#904e95 100%); width: 36px; height: 36px; border-radius: 50%;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Modalità</label>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="mode-select" data-mode="light" style="cursor:pointer;">
+                                                <div class="text-center small">Light</div>
+                                            </div>
+                                            <div class="mode-select" data-mode="dark" style="cursor:pointer;">
+                                                <div class="text-center small">Dark</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex align-items-center justify-content-center">
+                                    <div id="screenshot-preview-container" class="text-center">
+                                        <img id="screenshot-preview" 
+                                            src="/static/screenshots/dark-light.png" 
+                                            alt="Anteprima tema" 
+                                            style="width: 130%; margin-left: -7rem; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.10); display: block;">
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                        <!-- Positions Settings -->
+                        <div id="positions-settings" class="settings-section">
+                            <h2 class="text-secondary">Gestione Posizioni Consulenti</h2>
+                            <div class="mb-3">
+                                <label class="form-label">Nuova posizione</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="new-position-name" placeholder="Nome posizione" autocomplete="off">
+                                    <button class="btn btn-success" type="button" id="add-position-btn">Aggiungi</button>
+                                </div>
+                                <ul class="list-group" id="positions-list">
+                                    <li class="list-group-item text-muted" id="positions-empty-msg" style="display:none;">Nessuna posizione presente.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
                         
                         <div class="text-center">
                             <button type="submit" class="btn btn-secondary text-white w-50 mt-3 py-2 px-4 fw-bold rounded-pill shadow-sm">Salva Impostazioni</button>
@@ -134,14 +299,185 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Imposta il primo link e la prima sezione come attivi all'avvio, se nessun altro è attivo
+        window.addEventListener('DOMContentLoaded', function() {
+            const activeLink = document.querySelector('.category-list.active');
+            const activeSection = document.querySelector('.settings-section.active');
+            if (!activeLink) {
+                document.querySelector('.category-list').classList.add('active');
+            }
+            if (!activeSection) {
+                document.querySelector('.settings-section').classList.add('active');
+            }
+        });
         document.querySelectorAll('.category-list').forEach(item => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Rimuovi active da tutti i link
+                document.querySelectorAll('.category-list').forEach(link => link.classList.remove('active'));
+                // Aggiungi active solo al link cliccato
+                item.classList.add('active');
+                // Nascondi tutte le sezioni
                 document.querySelectorAll('.settings-section').forEach(section => {
                     section.classList.remove('active');
                 });
+                // Mostra la sezione selezionata
                 document.querySelector(item.getAttribute('data-target')).classList.add('active');
             });
         });
+        // Theme switching logic
+        let selectedTheme = 'dark';
+        let selectedMode = 'light';
+
+        // Funzione per cambiare la preview quando l'utente seleziona tema e modalità
+        function changePreview(theme, mode) {
+            const screenshotPreview = document.getElementById('screenshot-preview');
+            if (mode === 'dark') {
+            screenshotPreview.src = `/static/screenshots/${theme}-dark.png`;
+            
+            } else {
+            screenshotPreview.src = `/static/screenshots/${theme}-light.png`;
+            
+            }
+        }
+
+        document.querySelectorAll('.theme-preview').forEach((el, idx) => {
+            el.addEventListener('click', function() {
+            document.querySelectorAll('.theme-preview').forEach(p => p.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedTheme = ['dark','sunny','blue','sunset'][idx];
+            changePreview(selectedTheme, selectedMode);
+            setThemeAndReload(selectedTheme, selectedMode);
+            });
+        });
+
+        document.querySelectorAll('.mode-select').forEach(el => {
+            el.addEventListener('click', function() {
+            document.querySelectorAll('.mode-select').forEach(m => m.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedMode = this.getAttribute('data-mode');
+            changePreview(selectedTheme, selectedMode);
+            setThemeAndReload(selectedTheme, selectedMode);
+            });
+        });
+
+        function applyTheme(theme, mode) {
+            // Rimuovi tutte le classi tema dal body
+            document.body.classList.remove('theme-dark', 'theme-sunny', 'theme-blue', 'theme-sunset');
+            document.body.classList.add('theme-' + theme);
+            // Gestione dark mode
+            if (mode === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            // Salva preferenze
+            localStorage.setItem('selectedTheme', theme);
+            localStorage.setItem('selectedMode', mode);
+        }
+
+        // Aggiorna live l'anteprima iframe quando cambia tema o modalità
+        function updateIframeTheme() {
+            const iframe = document.getElementById('live-preview-frame');
+            if (!iframe) return;
+            // Forza il reload per aggiornare il tema
+            iframe.contentWindow?.location.reload();
+        }
+
+        function setThemeAndReload(theme, mode) {
+            fetch('/set_theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ theme, mode })
+            }).then(res => res.json()).then(data => {
+                if (data.success) reloadCSS();
+                applyTheme(theme, mode);
+                updateIframeTheme();
+            });
+        }
+
+        document.querySelectorAll('.theme-preview').forEach((el, idx) => {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.theme-preview').forEach(p => p.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedTheme = ['dark','sunny','blue','sunset'][idx];
+                setThemeAndReload(selectedTheme, selectedMode);
+            });
+        });        document.querySelectorAll('.mode-select').forEach(el => {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.mode-select').forEach(m => m.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedMode = this.getAttribute('data-mode');
+                setThemeAndReload(selectedTheme, selectedMode);
+            });
+        });
+
+        // On load, restore theme
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('selectedTheme') || 'dark';
+            const savedMode = localStorage.getItem('selectedMode') || 'light';
+            selectedTheme = savedTheme;
+            selectedMode = savedMode;
+            applyTheme(savedTheme, savedMode);
+            // Seleziona il tema e la modalità corretti nell'interfaccia
+            const themeIdx = ['dark','sunny','blue','sunset'].indexOf(savedTheme);
+            if (themeIdx >= 0) {
+                document.querySelectorAll('.theme-preview')[themeIdx].classList.add('selected');
+            }
+            document.querySelectorAll('.mode-select').forEach(m => m.classList.remove('selected'));
+            const selectedModeDiv = document.querySelector(`.mode-select[data-mode="${savedMode}"]`);
+            if (selectedModeDiv) selectedModeDiv.classList.add('selected');
+            changePreview(savedTheme, savedMode);
+        });
+
+        // Reload CSS dynamically
+        function reloadCSS() {
+            const links = document.querySelectorAll('link[rel="stylesheet"]');
+            links.forEach(link => {
+                if (link.href.includes('styles.css')) {
+                    const newHref = link.href.split('?')[0] + '?v=' + new Date().getTime();
+                    link.href = newHref;
+                }
+            });
+        }
+        // Gestione posizioni dinamica
+function loadPositions() {
+    fetch('/positions')
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('positions-list');
+            const emptyMsg = document.getElementById('positions-empty-msg');
+            list.innerHTML = '';
+            if (!data.length) {
+                emptyMsg.style.display = '';
+                list.appendChild(emptyMsg);
+            } else {
+                emptyMsg.style.display = 'none';
+                data.forEach(pos => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    li.innerHTML = `<span>${pos.nome}</span> <button class='btn btn-danger btn-sm' onclick='deletePosition(${pos.id})'>Elimina</button>`;
+                    list.appendChild(li);
+                });
+            }
+        });
+}
+function deletePosition(id) {
+    fetch('/positions', {method: 'DELETE', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: `id=${id}`})
+        .then(r => r.json())
+        .then(() => loadPositions());
+}
+document.getElementById('add-position-btn').onclick = function() {
+    const name = document.getElementById('new-position-name').value.trim();
+    if (!name) return;
+    fetch('/positions', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: `nome=${encodeURIComponent(name)}`})
+        .then(r => r.json())
+        .then(() => {
+            document.getElementById('new-position-name').value = '';
+            loadPositions();
+        });
+};
+document.addEventListener('DOMContentLoaded', loadPositions);
     </script>
 </body>
 </html>
