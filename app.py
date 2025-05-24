@@ -645,29 +645,53 @@ def add_appointment():
     
     return render_template('add_appointment.html', consultants=consultants, clients=clients)
 
+
 @app.route('/add_consultant', methods=['GET', 'POST'])
 def add_consultant():
     consultants = Consultant.query.all()
     positions = Position.query.all()
     if request.method == 'POST':
-        nome = request.form.get('nome')
-        posizione_id = request.form.get('posizione_id', type=int)
-        responsabile_id = request.form.get('responsabile_id')
-        residency = request.form.get('residency')
-        phone = request.form.get('phone')
-        email = request.form.get('email')
-        CF = request.form.get('CF')
-        if not nome:
-            flash("Il nome del consulente è obbligatorio!")
+        try:
+            nome = request.form.get('nome')
+            posizione_id = request.form.get('posizione_id', type=int)
+            responsabile_id = request.form.get('responsabile_id')
+            residency = request.form.get('residency')
+            phone = request.form.get('phone')
+            email = request.form.get('email')
+            CF = request.form.get('CF')
+            if not nome:
+                flash("Il nome del consulente è obbligatorio!")
+                return redirect(url_for('add_consultant'))
+            if not posizione_id:
+                posizione_id = get_or_create_default_position().id
+            # Se posizione_id ancora non esiste, crea la posizione di default
+            if not Position.query.get(posizione_id):
+                default_pos = get_or_create_default_position()
+                posizione_id = default_pos.id
+            # CORREZIONE: se responsabile_id è vuoto o non valido, metti None
+            if not responsabile_id or str(responsabile_id).strip() == '' or str(responsabile_id).lower() == 'none':
+                responsabile_id = None
+            new_consultant = Consultant(
+                nome=nome,
+                posizione_id=posizione_id,
+                responsabile_id=responsabile_id,
+                residency=residency,
+                phone=phone,
+                email=email,
+                CF=CF
+            )
+            db.session.add(new_consultant)
+            db.session.commit()
+            flash("Consulente aggiunto con successo!")
+            return redirect(url_for('index'))
+        except Exception as e:
+            import traceback
+            print('Errore durante l\'aggiunta del consulente:', e)
+            traceback.print_exc()
+            flash(f"Errore durante l'aggiunta del consulente: {e}")
             return redirect(url_for('add_consultant'))
-        if not posizione_id:
-            posizione_id = get_or_create_default_position().id
-        new_consultant = Consultant(nome=nome, posizione_id=posizione_id, responsabile_id=responsabile_id, residency=residency, phone=phone, email=email, CF=CF)
-        db.session.add(new_consultant)
-        db.session.commit()
-        flash("Consulente aggiunto con successo!")
-        return redirect(url_for('index'))
     return render_template('add_consultant.html', consultants=consultants, positions=positions)
+# ...existing code...
 
 @app.route('/appointments', methods=['GET'])
 def appointments():
@@ -894,7 +918,8 @@ def api_consultants():
             result.append({
                 'id': consultant.id,
                 'nome': consultant.nome,
-                'posizione': consultant.posizione,
+                'posizione': consultant.posizione.nome if consultant.posizione else None,
+                'posizione_id': consultant.posizione_id,
                 'responsabile_id': consultant.responsabile_id,
                 'totalYearlyPay': consultant.totalYearlyPay,
                 'residency': consultant.residency,
@@ -906,12 +931,28 @@ def api_consultants():
 
     elif request.method == 'POST':
         data = request.get_json()
-        if not data.get('nome') or not data.get('posizione'):
-            return jsonify(error='Missing required fields: nome and posizione'), 400
+        if not data.get('nome'):
+            return jsonify(error='Missing required field: nome'), 400
+
+        posizione_id = data.get('posizione_id')
+        if not posizione_id and data.get('posizione'):
+            pos = Position.query.filter_by(nome=data.get('posizione')).first()
+            if not pos:
+                pos = Position(nome=data.get('posizione'))
+                db.session.add(pos)
+                db.session.commit()
+            posizione_id = pos.id
+        if not posizione_id:
+            posizione_id = get_or_create_default_position().id
+
+        responsabile_id = data.get('responsabile_id')
+        if responsabile_id in [None, '', 'null']:
+            responsabile_id = None
+
         new_consultant = Consultant(
             nome=data.get('nome'),
-            posizione_id=data.get('posizione_id'),
-            responsabile_id=data.get('responsabile_id'),
+            posizione_id=posizione_id,
+            responsabile_id=responsabile_id,
             residency=data.get('residency'),
             phone=data.get('phone'),
             email=data.get('email'),
@@ -1039,7 +1080,7 @@ def chat_endpoint():
 
     return jsonify({"response": response})
 
-
+'''
 
 @app.route('/followup/complete/<int:id>', methods=['POST'])
 def complete_followup(id):
@@ -1101,36 +1142,6 @@ def get_or_create_default_position():
     return default
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-######################################################################
-######################################################################
-######################################################################
-
-'''
 # Utility per ottenere o creare la posizione "Nessuna posizione"
 def get_or_create_default_position():
     default = Position.query.filter_by(nome="Nessuna posizione").first()
