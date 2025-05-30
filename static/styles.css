@@ -22,7 +22,7 @@ h1 {
   }
 
 /* === THEME & LAYOUT CUSTOMIZATION === */
-:root.theme-sunset-dark {
+:root.theme-blue-dark {
   --main-btn-radius: 20px;
   --main-btn-padding: 20px 20px;
   --main-btn-font: 18px;
