@@ -1294,31 +1294,25 @@ def print_payments():
 
 @app.route('/report', methods=['GET'])
 def generate_report():
-    consultants_by_position = {"Manager Main Office": [],"Assistenza: Tecnici Main Office": [],"Social Media": [],"Dealers Con Campionario Main Office": [],"Consulenti DPS Main Office": [],"Consulenti Kirby Life": [],"DT+Managers+Dealers Ufficio di Carmagnola": [],"Campionari da Ritirare": []}
+    # Ottieni tutte le posizioni dal database
+    positions = Position.query.all()
+    # Crea un dizionario per raggruppare i consulenti per nome posizione
+    consultants_by_position = {pos.nome: [] for pos in positions}
     consultants = Consultant.query.all()
 
+    # Raggruppa i consulenti per nome posizione (se non hanno posizione, "Nessuna posizione")
     for consultant in consultants:
-        if consultant.posizione == "1":
-            consultants_by_position["Manager Main Office"].append(consultant)
-        elif consultant.posizione == "2":
-            consultants_by_position["Assistenza: Tecnici Main Office"].append(consultant)
-        elif consultant.posizione == "3":
-            consultants_by_position["Social Media"].append(consultant)
-        elif consultant.posizione == "4":
-            consultants_by_position["Dealers Con Campionario Main Office"].append(consultant)
-        elif consultant.posizione == "5":
-            consultants_by_position["Consulenti DPS Main Office"].append(consultant)
-        elif consultant.posizione == "6":
-            consultants_by_position["Consulenti Kirby Life"].append(consultant)
-        elif consultant.posizione == "7":
-            consultants_by_position["DT+Managers+Dealers Ufficio di Carmagnola"].append(consultant)
-        elif consultant.posizione == "8":
-            consultants_by_position["Campionari da Ritirare"].append(consultant)
+        pos_name = consultant.posizione.nome if consultant.posizione else "Nessuna posizione"
+        if pos_name not in consultants_by_position:
+            consultants_by_position[pos_name] = []
+        consultants_by_position[pos_name].append(consultant)
 
+    # Prepara il file Excel in memoria
     output = BytesIO()
     workbook = xlsxwriter.Workbook(output, {'in_memory': True})
     worksheet = workbook.add_worksheet()
 
+    # Formattazione delle intestazioni e delle posizioni
     header_format = workbook.add_format({'bold': True, 'bg_color': '#D3D3D3'})
     header_format.set_text_wrap()
     header_format.set_align('center')
@@ -1328,11 +1322,13 @@ def generate_report():
     worksheet.set_column(0, 0, 38)
     worksheet.set_column(1, 16, 6)
 
+    # Intestazioni delle colonne
     headers = ['Consulente','P','A','Ass. G.','Ass. M.','Dim. G.','Dim. M.','Vend Ass. G.','Vend Ass. M.','Vend Dim. G.','Vend Dim. M.','Nom. G.','Nom. M.','App. Pers. G.','App. Pers. M.','Tot. App.','Vend Gruppo']
     for col_num, header in enumerate(headers):
         worksheet.write(0, col_num, header, header_format)
 
     row = 1
+    # Per ogni posizione, scrivi la riga di intestazione e poi i consulenti
     for posizione, consultants in consultants_by_position.items():
         worksheet.write(row, 0, posizione, position_format)
         row += 1
@@ -1341,11 +1337,13 @@ def generate_report():
             today = datetime.today().date()
             start_of_month = today.replace(day=1)
 
+            # Filtra appuntamenti per tipologia e periodo
             daily_assistance = [app for app in appointments if app.data_appuntamento.date() == today and app.tipologia == 'Assistenza']
             monthly_assistance = [app for app in appointments if app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Assistenza']
             daily_demonstration = [app for app in appointments if app.data_appuntamento.date() == today and app.tipologia == 'Dimostrazione']
             monthly_demonstration = [app for app in appointments if app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Dimostrazione']
 
+            # Calcola vendite e raccolte
             daily_sales_assistance = sum(1 for app in daily_assistance if app.venduto)
             monthly_sales_assistance = sum(1 for app in monthly_assistance if app.venduto)
             daily_sales_demonstration = sum(1 for app in daily_demonstration if app.venduto)
@@ -1361,6 +1359,7 @@ def generate_report():
             daily_personal_appointments += sum(app.appuntamenti_personali for app in daily_demonstration)
             monthly_personal_appointments += sum(app.appuntamenti_personali for app in monthly_demonstration)
 
+            # Calcola vendite di gruppo (inclusi subordinati)
             group_sales = monthly_sales_assistance + monthly_sales_demonstration
             for subordinato in consultant.subordinati:
                 subordinato_appointments = subordinato.appointments
@@ -1368,6 +1367,7 @@ def generate_report():
                 subordinato_monthly_sales_demonstration = sum(1 for app in subordinato_appointments if app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Dimostrazione' and app.venduto)
                 group_sales += subordinato_monthly_sales_assistance + subordinato_monthly_sales_demonstration
 
+            # Scrivi i dati del consulente nella riga
             worksheet.write(row, 0, consultant.nome)
             worksheet.write(row, 3, len(daily_assistance))
             worksheet.write(row, 4, len(monthly_assistance))
@@ -1382,9 +1382,11 @@ def generate_report():
             worksheet.write(row, 13, daily_personal_appointments)
             worksheet.write(row, 14, monthly_personal_appointments)
             worksheet.write(row, 15, monthly_personal_appointments+len(monthly_assistance)+len(monthly_demonstration))
-            worksheet.write(row, 16, group_sales if posizione == "Manager Main Office" else "")
+            # Mostra Vend Gruppo solo per i manager (modifica la logica se necessario)
+            worksheet.write(row, 16, group_sales if posizione.lower().startswith("manager") else "")
             row += 1
 
+    # Chiudi e restituisci il file Excel
     workbook.close()
     output.seek(0)
 
@@ -1493,7 +1495,4 @@ def set_theme():
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
-
-
-
-
+    
