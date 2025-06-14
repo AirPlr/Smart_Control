@@ -1294,15 +1294,17 @@ def print_payments():
 
 @app.route('/report', methods=['GET'])
 def generate_report():
-    # Ottieni tutte le posizioni dal database
+    # Ottieni tutte le posizioni dal database, inclusa la posizione di default
     positions = Position.query.all()
+    default_position = get_or_create_default_position()
     # Crea un dizionario per raggruppare i consulenti per nome posizione
     consultants_by_position = {pos.nome: [] for pos in positions}
+    consultants_by_position[default_position.nome] = []
     consultants = Consultant.query.all()
 
     # Raggruppa i consulenti per nome posizione (se non hanno posizione, "Nessuna posizione")
     for consultant in consultants:
-        pos_name = consultant.posizione.nome if consultant.posizione else "Nessuna posizione"
+        pos_name = consultant.posizione.nome if consultant.posizione else default_position.nome
         if pos_name not in consultants_by_position:
             consultants_by_position[pos_name] = []
         consultants_by_position[pos_name].append(consultant)
@@ -1330,6 +1332,8 @@ def generate_report():
     row = 1
     # Per ogni posizione, scrivi la riga di intestazione e poi i consulenti
     for posizione, consultants in consultants_by_position.items():
+        if not consultants:
+            continue  # Salta le posizioni senza consulenti
         worksheet.write(row, 0, posizione, position_format)
         row += 1
         for consultant in consultants:
@@ -1338,10 +1342,10 @@ def generate_report():
             start_of_month = today.replace(day=1)
 
             # Filtra appuntamenti per tipologia e periodo
-            daily_assistance = [app for app in appointments if app.data_appuntamento.date() == today and app.tipologia == 'Assistenza']
-            monthly_assistance = [app for app in appointments if app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Assistenza']
-            daily_demonstration = [app for app in appointments if app.data_appuntamento.date() == today and app.tipologia == 'Dimostrazione']
-            monthly_demonstration = [app for app in appointments if app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Dimostrazione']
+            daily_assistance = [app for app in appointments if app.data_appuntamento and app.data_appuntamento.date() == today and app.tipologia == 'Assistenza']
+            monthly_assistance = [app for app in appointments if app.data_appuntamento and app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Assistenza']
+            daily_demonstration = [app for app in appointments if app.data_appuntamento and app.data_appuntamento.date() == today and app.tipologia == 'Dimostrazione']
+            monthly_demonstration = [app for app in appointments if app.data_appuntamento and app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Dimostrazione']
 
             # Calcola vendite e raccolte
             daily_sales_assistance = sum(1 for app in daily_assistance if app.venduto)
@@ -1349,22 +1353,22 @@ def generate_report():
             daily_sales_demonstration = sum(1 for app in daily_demonstration if app.venduto)
             monthly_sales_demonstration = sum(1 for app in monthly_demonstration if app.venduto)
 
-            daily_names = sum(app.nominativi_raccolti for app in daily_assistance)
-            monthly_names = sum(app.nominativi_raccolti for app in monthly_assistance)
-            daily_names += sum(app.nominativi_raccolti for app in daily_demonstration)
-            monthly_names += sum(app.nominativi_raccolti for app in monthly_demonstration)
+            daily_names = sum(app.nominativi_raccolti or 0 for app in daily_assistance)
+            monthly_names = sum(app.nominativi_raccolti or 0 for app in monthly_assistance)
+            daily_names += sum(app.nominativi_raccolti or 0 for app in daily_demonstration)
+            monthly_names += sum(app.nominativi_raccolti or 0 for app in monthly_demonstration)
 
-            daily_personal_appointments = sum(app.appuntamenti_personali for app in daily_assistance)
-            monthly_personal_appointments = sum(app.appuntamenti_personali for app in monthly_assistance)
-            daily_personal_appointments += sum(app.appuntamenti_personali for app in daily_demonstration)
-            monthly_personal_appointments += sum(app.appuntamenti_personali for app in monthly_demonstration)
+            daily_personal_appointments = sum(app.appuntamenti_personali or 0 for app in daily_assistance)
+            monthly_personal_appointments = sum(app.appuntamenti_personali or 0 for app in monthly_assistance)
+            daily_personal_appointments += sum(app.appuntamenti_personali or 0 for app in daily_demonstration)
+            monthly_personal_appointments += sum(app.appuntamenti_personali or 0 for app in monthly_demonstration)
 
             # Calcola vendite di gruppo (inclusi subordinati)
             group_sales = monthly_sales_assistance + monthly_sales_demonstration
-            for subordinato in consultant.subordinati:
+            for subordinato in getattr(consultant, 'subordinati', []):
                 subordinato_appointments = subordinato.appointments
-                subordinato_monthly_sales_assistance = sum(1 for app in subordinato_appointments if app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Assistenza' and app.venduto)
-                subordinato_monthly_sales_demonstration = sum(1 for app in subordinato_appointments if app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Dimostrazione' and app.venduto)
+                subordinato_monthly_sales_assistance = sum(1 for app in subordinato_appointments if app.data_appuntamento and app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Assistenza' and app.venduto)
+                subordinato_monthly_sales_demonstration = sum(1 for app in subordinato_appointments if app.data_appuntamento and app.data_appuntamento.date() >= start_of_month and app.tipologia == 'Dimostrazione' and app.venduto)
                 group_sales += subordinato_monthly_sales_assistance + subordinato_monthly_sales_demonstration
 
             # Scrivi i dati del consulente nella riga
@@ -1495,4 +1499,3 @@ def set_theme():
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
-    
