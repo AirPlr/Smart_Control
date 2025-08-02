@@ -135,7 +135,30 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const reportForm = document.getElementById('reportForm');
-    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const loadingModalElement = document.getElementById('loadingModal');
+    const loadingModal = new bootstrap.Modal(loadingModalElement);
+    
+    // Funzione helper per nascondere il modal in modo sicuro
+    function hideLoadingModal() {
+        try {
+            loadingModal.hide();
+        } catch (e) {
+            // Fallback usando jQuery se Bootstrap non funziona
+            if (typeof $ !== 'undefined') {
+                $(loadingModalElement).modal('hide');
+            } else {
+                // Fallback manuale
+                loadingModalElement.style.display = 'none';
+                loadingModalElement.classList.remove('show');
+                document.body.classList.remove('modal-open');
+                // Rimuovi backdrop se presente
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+            }
+        }
+    }
     
     // Imposta date di default (ultimo mese)
     const today = new Date();
@@ -152,24 +175,48 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mostra loading
         loadingModal.show();
         
+        // Timeout di sicurezza per nascondere il modal dopo 30 secondi
+        const timeoutId = setTimeout(() => {
+            hideLoadingModal();
+            alert('Timeout: la generazione del report sta impiegando troppo tempo. Riprova più tardi.');
+        }, 30000);
+        
         fetch('{{ url_for("admin.generate_report") }}', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            // Cancella il timeout
+            clearTimeout(timeoutId);
+            
+            // Nascondi sempre il modal quando arriva una risposta
+            setTimeout(() => {
+                hideLoadingModal();
+            }, 100);
+            
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
-            loadingModal.hide();
+            // Assicurati che il modal sia nascosto
+            hideLoadingModal();
             
             if (data.success) {
                 displayReport(data.data);
             } else {
-                alert('Errore nella generazione del report: ' + data.error);
+                alert('Errore nella generazione del report: ' + (data.error || 'Errore sconosciuto'));
             }
         })
         .catch(error => {
-            loadingModal.hide();
+            // Cancella il timeout
+            clearTimeout(timeoutId);
+            
+            // Assicurati che il modal sia nascosto anche in caso di errore
+            hideLoadingModal();
             console.error('Error:', error);
-            alert('Errore nella generazione del report');
+            alert('Errore nella generazione del report: ' + error.message);
         });
     });
     
