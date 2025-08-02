@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card p-5 shadow-lg">
+        <h2 class="mb-4 text-center">Benvenuto, {{ user.username }}!</h2>
+        <p class="lead text-center">Grazie per esserti registrato. Ecco alcuni suggerimenti per iniziare:</p>
+        <ul class="list-group list-group-flush mb-4">
+            <li class="list-group-item">1. Personalizza il tuo <b>tema</b> e le <b>impostazioni</b> dal menu Impostazioni.</li>
+            <li class="list-group-item">2. Collega le tue <b>integrazioni</b> preferite (WhatsApp, Google, ...).</li>
+            <li class="list-group-item">3. Aggiungi clienti, appuntamenti e consulenti dal menu principale.</li>
+            <li class="list-group-item">4. Consulta la <b>documentazione</b> o chiedi supporto se hai bisogno di aiuto.</li>
+        </ul>
+        <div class="text-center">
+            <a href="{{ url_for('main.onboarding', complete=1) }}" class="btn btn-success btn-lg px-5">Inizia ora</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

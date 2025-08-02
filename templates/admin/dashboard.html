@@ -1,0 +1,501 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="admin-card welcome-card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2 text-white">
+                    <i class="fas fa-wave-square me-2"></i>
+                    Benvenuto, {{ current_user.username }}!
+                </h1>
+                <p class="lead mb-0 text-white-50">
+                    Gestisci il tuo sistema di appuntamenti da questa dashboard centrale.
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="text-white-50">
+                    <i class="fas fa-clock me-1"></i>
+                    <script>document.write(new Date().toLocaleDateString('it-IT'));</script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metriche Principali -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="admin-metric-card">
+            <div class="admin-metric-value">
+                {% if data and data.total_appointments is defined %}
+                    {{ data.total_appointments }}
+                {% else %}
+                    0
+                {% endif %}
+            </div>
+            <div class="admin-metric-label">
+                <i class="fas fa-calendar me-2"></i>Appuntamenti
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="admin-metric-card">
+            <div class="admin-metric-value">
+                {% if data and data.total_consultants is defined %}
+                    {{ data.total_consultants }}
+                {% else %}
+                    0
+                {% endif %}
+            </div>
+            <div class="admin-metric-label">
+                <i class="fas fa-user-tie me-2"></i>Consulenti
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="admin-metric-card">
+            <div class="admin-metric-value">
+                {% if data and data.total_users is defined %}
+                    {{ data.total_users }}
+                {% else %}
+                    0
+                {% endif %}
+            </div>
+            <div class="admin-metric-label">
+                <i class="fas fa-users me-2"></i>Utenti
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="admin-metric-card">
+            <div class="admin-metric-value">
+                {% if data and data.sold_appointments is defined and data.total_appointments and data.total_appointments > 0 %}
+                    {% set conversion = (data.sold_appointments / data.total_appointments * 100) %}
+                    {{ "%.1f"|format(conversion) }}%
+                {% else %}
+                    0.0%
+                {% endif %}
+            </div>
+            <div class="admin-metric-label">
+                <i class="fas fa-chart-line me-2"></i>Conversione
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Azioni Rapide -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Azioni Rapide
+                </h5>
+            </div>
+            <div class="admin-card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-user-plus fa-3x text-primary mb-2"></i>
+                                <h6>Nuovo Utente</h6>
+                                <p class="text-muted small">Crea un nuovo utente/consulente</p>
+                            </div>
+                            <a href="{{ url_for('admin.create_user') }}" class="admin-btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Crea
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-plus fa-3x text-success mb-2"></i>
+                                <h6>Nuovo Appuntamento</h6>
+                                <p class="text-muted small">Aggiungi un appuntamento</p>
+                            </div>
+                            <a href="{{ url_for('main.add_appointment') }}" class="admin-btn btn-success">
+                                <i class="fas fa-plus me-2"></i>Aggiungi
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-cogs fa-3x text-info mb-2"></i>
+                                <h6>Impostazioni</h6>
+                                <p class="text-muted small">Gestisci sistema e configurazioni</p>
+                            </div>
+                            <a href="{{ url_for('admin.settings') }}" class="admin-btn btn-info">
+                                <i class="fas fa-cogs me-2"></i>Apri
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                        <div class="text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-chart-bar fa-3x text-warning mb-2"></i>
+                                <h6>Report</h6>
+                                <p class="text-muted small">Visualizza statistiche e report</p>
+                            </div>
+                            <button class="admin-btn btn-warning" onclick="generateQuickReport()">
+                                <i class="fas fa-chart-line me-2"></i>Genera
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sezione principale con appuntamenti recenti e AI Assistant -->
+<div class="row">
+    <!-- Appuntamenti Recenti -->
+    <div class="col-md-8 mb-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Appuntamenti Recenti
+                    <span class="badge bg-light text-dark ms-2">{{ (data.recent_appointments or [])|length }}</span>
+                </h5>
+            </div>
+            <div class="admin-card-body p-0">
+                {% if data.recent_appointments %}
+                    <div class="admin-table table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Consulente</th>
+                                    <th>Data</th>
+                                    <th>Tipo</th>
+                                    <th>Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in data.recent_appointments[:10] %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ appointment.nome_cliente }}</strong>
+                                        {% if appointment.telefono %}
+                                            <br><small class="text-muted">{{ appointment.telefono }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ appointment.consulente.nome if appointment.consulente else 'N/A' }}</td>
+                                    <td>
+                                        <small>{{ appointment.data_appuntamento.strftime('%d/%m/%Y') }}</small>
+                                        <br><small class="text-muted">{{ appointment.data_appuntamento.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge {{ 'bg-info' if appointment.tipologia == 'Dimostrazione' else 'bg-warning' }}">
+                                            {{ appointment.tipologia }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if appointment.venduto %}
+                                            <span class="badge bg-success">Venduto</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ appointment.stato or 'In Attesa' }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="p-3 text-center border-top">
+                        <a href="{{ url_for('main.appointments') }}" class="admin-btn btn-outline-primary">
+                            <i class="fas fa-list me-2"></i>Vedi Tutti gli Appuntamenti
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nessun appuntamento recente</h5>
+                        <p class="text-muted mb-3">Inizia aggiungendo il primo appuntamento al sistema</p>
+                        <a href="{{ url_for('main.add_appointment') }}" class="admin-btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Aggiungi il primo appuntamento
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Assistant & Quick Links -->
+    <div class="col-md-4">
+        <!-- AI Assistant -->
+        <div class="admin-card mb-4">
+            <div class="admin-card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-robot me-2"></i>AI Assistant
+                </h5>
+            </div>
+            <div class="admin-card-body">
+                <div id="ai-widget-container">
+                    <p class="text-muted mb-3">Il tuo assistente AI è pronto ad aiutarti!</p>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="admin-btn btn-outline-primary btn-sm" onclick="askAI('Analizza i dati degli appuntamenti di oggi')">
+                            <i class="fas fa-chart-line me-2"></i>Analisi Giornaliera
+                        </button>
+                        <button class="admin-btn btn-outline-success btn-sm" onclick="askAI('Mostrami le performance dei consulenti')">
+                            <i class="fas fa-users me-2"></i>Performance Consulenti
+                        </button>
+                        <button class="admin-btn btn-outline-info btn-sm" onclick="askAI('Suggerimenti per migliorare le vendite')">
+                            <i class="fas fa-lightbulb me-2"></i>Suggerimenti
+                        </button>
+                        <button class="admin-btn btn-warning" onclick="openAIChat()">
+                            <i class="fas fa-comments me-2"></i>Chat Completa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collegamenti Rapidi -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-link me-2"></i>Collegamenti Rapidi
+                </h6>
+            </div>
+            <div class="admin-card-body p-2">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action border-0 rounded">
+                        <i class="fas fa-users me-2 text-primary"></i>Gestione Utenti
+                    </a>
+                    <a href="{{ url_for('main.consultants') }}" class="list-group-item list-group-item-action border-0 rounded">
+                        <i class="fas fa-user-tie me-2 text-success"></i>Consulenti
+                    </a>
+                    <a href="{{ url_for('main.appointments') }}" class="list-group-item list-group-item-action border-0 rounded">
+                        <i class="fas fa-calendar me-2 text-info"></i>Tutti gli Appuntamenti
+                    </a>
+                    <a href="{{ url_for('admin.settings') }}" class="list-group-item list-group-item-action border-0 rounded">
+                        <i class="fas fa-cogs me-2 text-warning"></i>Impostazioni Sistema
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer Dashboard -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="admin-card-body text-center py-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Dashboard amministrativa unificata - Utilizza il selettore temi per personalizzare l'aspetto
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Funzioni AI Assistant
+function askAI(message) {
+    if (window.aiAssistant) {
+        window.aiAssistant.sendTextMessage(message);
+        window.aiAssistant.show();
+    } else {
+        showNotification('AI Assistant non disponibile. Controlla le impostazioni.', 'warning');
+    }
+}
+
+function openAIChat() {
+    if (window.aiAssistant) {
+        window.aiAssistant.show();
+    } else {
+        showNotification('AI Assistant non disponibile. Controlla le impostazioni.', 'warning');
+    }
+}
+
+function generateQuickReport() {
+    // Mostra modal per selezione rapida report
+    const reportOptions = [
+        { id: '1', name: 'Performance Generale', message: 'Genera un report delle performance generali del sistema' },
+        { id: '2', name: 'Report Consulenti', message: 'Mostrami un report dettagliato di tutti i consulenti' },
+        { id: '3', name: 'Statistiche Mensili', message: 'Genera statistiche complete per questo mese' }
+    ];
+    
+    let optionsText = 'Che tipo di report vuoi generare?\n';
+    reportOptions.forEach(option => {
+        optionsText += `${option.id} - ${option.name}\n`;
+    });
+    
+    const reportType = prompt(optionsText, '1');
+    
+    if (reportType) {
+        const selectedOption = reportOptions.find(opt => opt.id === reportType);
+        if (selectedOption) {
+            askAI(selectedOption.message);
+        } else {
+            showNotification('Opzione non valida', 'error');
+        }
+    }
+}
+
+// Sistema di notifiche unificato
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info'} alert-dismissible position-fixed admin-animate-in`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: var(--admin-shadow);';
+    
+    const iconMap = {
+        'success': 'check-circle',
+        'error': 'exclamation-circle',
+        'warning': 'exclamation-triangle',
+        'info': 'info-circle'
+    };
+    
+    notification.innerHTML = `
+        <i class="fas fa-${iconMap[type] || 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.add('fade');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 4000);
+}
+
+// Auto-refresh delle metriche ogni 5 minuti
+let refreshInterval;
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(function() {
+        refreshDashboardMetrics();
+    }, 300000); // 5 minuti
+}
+
+function refreshDashboardMetrics() {
+    fetch('/admin/dashboard/metrics')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateMetrics(data.metrics);
+                console.log('Dashboard metrics refreshed');
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing metrics:', error);
+        });
+}
+
+function updateMetrics(metrics) {
+    // Aggiorna le metriche nella dashboard
+    const metricElements = document.querySelectorAll('.admin-metric-value');
+    if (metricElements.length >= 4) {
+        metricElements[0].textContent = metrics.total_appointments || '0';
+        metricElements[1].textContent = metrics.total_consultants || '0';
+        metricElements[2].textContent = metrics.total_users || '0';
+        
+        // Calcola e aggiorna la percentuale di conversione
+        const conversion = metrics.total_appointments > 0 
+            ? (metrics.sold_appointments / metrics.total_appointments * 100).toFixed(1)
+            : '0.0';
+        metricElements[3].textContent = conversion + '%';
+    }
+}
+
+// Animazioni al caricamento
+function initializeAnimations() {
+    // Animazione contatori con easing
+    const counters = document.querySelectorAll('.admin-metric-value');
+    
+    counters.forEach((counter, index) => {
+        const target = parseInt(counter.textContent.replace(/[^\d]/g, '')) || 0;
+        let current = 0;
+        const increment = target / 60; // 60 frame per 1 secondo
+        const duration = 1000; // 1 secondo
+        
+        // Delay incrementale per ogni contatore
+        setTimeout(() => {
+            const updateCounter = () => {
+                if (current < target) {
+                    current += increment;
+                    const displayValue = Math.floor(current);
+                    
+                    // Mantieni il formato originale (con %)
+                    if (counter.textContent.includes('%')) {
+                        counter.textContent = displayValue + '%';
+                    } else {
+                        counter.textContent = displayValue;
+                    }
+                    
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    // Valore finale preciso
+                    if (counter.textContent.includes('%')) {
+                        counter.textContent = target + '%';
+                    } else {
+                        counter.textContent = target;
+                    }
+                }
+            };
+            
+            updateCounter();
+        }, index * 200); // Delay di 200ms tra i contatori
+    });
+}
+
+// Event listeners e inizializzazione
+document.addEventListener('DOMContentLoaded', function() {
+    // Inizializza animazioni
+    initializeAnimations();
+    
+    // Avvia auto-refresh
+    startAutoRefresh();
+    
+    // Gestione tema
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'default';
+    console.log(`Dashboard caricata con tema: ${currentTheme}`);
+    
+    // Hover effects per le metriche
+    const metricCards = document.querySelectorAll('.admin-metric-card');
+    metricCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(-5px) scale(1)';
+        });
+    });
+});
+
+// Cleanup quando si cambia pagina
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}

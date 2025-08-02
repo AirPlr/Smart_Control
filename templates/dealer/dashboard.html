@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Dealer - {{ data.consultant_name or 'Dealer' }}</title>
+    
+    <!-- Bootstrap per mobile + CSS personalizzato -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css" rel="stylesheet">
+    
+    <style>
+        /* Mobile-first design ottimizzato */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .mobile-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .stats-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: none;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .stats-card:active {
+            transform: scale(0.98);
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+        
+        .stats-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .quick-action-btn {
+            background: linear-gradient(45deg, #4f46e5, #7c3aed);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            padding: 15px;
+            margin: 10px 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .quick-action-btn:hover, .quick-action-btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            color: white;
+        }
+        
+        .recent-item {
+            background: rgba(255,255,255,0.8);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4f46e5;
+        }
+        
+        .badge-success { background: linear-gradient(45deg, #10b981, #059669) !important; }
+        .badge-warning { background: linear-gradient(45deg, #f59e0b, #d97706) !important; }
+        .badge-info { background: linear-gradient(45deg, #3b82f6, #2563eb) !important; }
+        
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .container-fluid { padding: 0 15px; }
+            .stats-number { font-size: 2rem; }
+            .chart-container { height: 200px; padding: 15px; }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+            .mobile-header, .stats-card, .chart-container { 
+                background: rgba(30, 41, 59, 0.95) !important; 
+                color: #f1f5f9;
+            }
+            .recent-item { 
+                background: rgba(30, 41, 59, 0.8) !important; 
+                color: #f1f5f9;
+            }
+            .stats-label { color: #94a3b8; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Mobile -->
+    <div class="mobile-header">
+        <div class="container-fluid py-3">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <i class="fas fa-user-tie fa-2x text-primary"></i>
+                </div>
+                <div class="col">
+                    <h5 class="mb-0">{{ data.consultant_name or 'Dealer Dashboard' }}</h5>
+                    <div class="d-flex align-items-center">
+                        <small class="text-muted me-3">{{ data.current_date or 'Agosto 2025' }}</small>
+                        {% if data.monthly_stats %}
+                        <span class="badge bg-primary me-2">
+                            {{ data.monthly_stats.sold_this_month or 0 }}/{{ data.monthly_target or 10 }} 🎯
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="refreshData()">
+                                <i class="fas fa-sync-alt me-2"></i>Aggiorna Dati
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="shareStats()">
+                                <i class="fas fa-share-alt me-2"></i>Condividi Stats
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="dealerQuickActions.showPerformance()">
+                                <i class="fas fa-robot me-2"></i>Analisi AI
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mini Progress Bar per Obiettivo Mensile -->
+            {% if data.monthly_stats %}
+            {% set monthly_progress = ((data.monthly_stats.sold_this_month or 0) / (data.monthly_target or 10) * 100) %}
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="progress" style="height: 4px; background-color: rgba(79, 70, 229, 0.2);">
+                        <div class="progress-bar" 
+                             style="background: linear-gradient(90deg, #4f46e5, #10b981); width: {{ monthly_progress if monthly_progress <= 100 else 100 }}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- AI Assistant Integration Specifica per Dealer Mobile -->
+    <div class="d-block d-md-none">
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-robot me-2"></i>
+                    AI Assistant Mobile
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="small mb-3">Il tuo assistente IA personale è sempre disponibile!</p>
+                <div class="row">
+                    <div class="col-6">
+                        <button class="btn btn-outline-primary btn-sm w-100" onclick="aiAssistant.sendTextMessage('Analizza le mie performance')">
+                            <i class="fas fa-chart-line"></i><br>
+                            <small>Performance</small>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button class="btn btn-outline-success btn-sm w-100" onclick="aiAssistant.sendTextMessage('Consigli per migliorare le vendite')">
+                            <i class="fas fa-lightbulb"></i><br>
+                            <small>Consigli</small>
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-4">
+                        <button class="btn btn-outline-info btn-sm w-100" onclick="aiAssistant.sendTextMessage('Quali clienti dovrei ricontattare?')">
+                            <i class="fas fa-phone"></i><br>
+                            <small>Follow-up</small>
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-outline-warning btn-sm w-100" onclick="aiAssistant.show()">
+                            <i class="fas fa-microphone"></i><br>
+                            <small>Chat Vocale</small>
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <a href="{{ url_for('dealer.reports') }}" class="btn btn-outline-secondary btn-sm w-100 text-decoration-none">
+                            <i class="fas fa-chart-bar"></i><br>
+                            <small>Report</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Configurazione specifica AI Assistant per Dealer
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-mostra AI Assistant su mobile per dealer
+    if (window.innerWidth <= 768 && window.aiAssistant) {
+        setTimeout(() => {
+            // Mostra brevemente l'assistente per far sapere che è disponibile
+            window.aiAssistant.show();
+            setTimeout(() => {
+                window.aiAssistant.hide();
+            }, 3000);
+        }, 2000);
+    }
+    
+    // Quick actions per dashboard dealer
+    window.dealerQuickActions = {
+        showPerformance: () => {
+            if (window.aiAssistant) {
+                window.aiAssistant.sendTextMessage('Mostrami un\'analisi dettagliata delle mie performance recenti con suggerimenti per migliorare');
+            }
+        },
+        showFollowUps: () => {
+            if (window.aiAssistant) {
+                window.aiAssistant.sendTextMessage('Quali sono i follow-up più importanti che dovrei fare oggi?');
+            }
+        },
+        optimizeSchedule: () => {
+            if (window.aiAssistant) {
+                window.aiAssistant.sendTextMessage('Come posso ottimizzare il mio calendario di appuntamenti per la prossima settimana?');
+            }
+        }
+    };
+});    <div class="container-fluid">
+        <!-- Statistiche Principali -->
+        <div class="row">
+            <div class="col-6 col-md-3">
+                <div class="stats-card card text-center p-3">
+                    <div class="stats-number">{{ data.total_appointments or 0 }}</div>
+                    <div class="stats-label">Appuntamenti Totali</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card card text-center p-3">
+                    <div class="stats-number">{{ data.sold_appointments or 0 }}</div>
+                    <div class="stats-label">Vendite Totali</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card card text-center p-3">
+                    <div class="stats-number">{{ data.monthly_stats.total_this_month or 0 }}</div>
+                    <div class="stats-label">Questo Mese</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="stats-card card text-center p-3">
+                    <div class="stats-number">
+                        {{ "%.0f"|format((data.sold_appointments / data.total_appointments * 100) if data.total_appointments > 0 else 0) }}%
+                    </div>
+                    <div class="stats-label">Conversione</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiche Mensili Dettagliate -->
+        <div class="stats-card card p-3 mt-3">
+            <div class="row align-items-center mb-3">
+                <div class="col">
+                    <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Statistiche Mensili</h6>
+                </div>
+                <div class="col-auto">
+                    <small class="text-muted">{{ "Agosto 2025" }}</small>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="text-center p-2 rounded" style="background: rgba(79, 70, 229, 0.1);">
+                        <div class="h4 mb-1 text-primary">{{ data.monthly_stats.total_this_month or 0 }}</div>
+                        <small class="text-muted">Appuntamenti</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="text-center p-2 rounded" style="background: rgba(16, 185, 129, 0.1);">
+                        <div class="h4 mb-1 text-success">{{ data.monthly_stats.sold_this_month or 0 }}</div>
+                        <small class="text-muted">Vendite</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="text-center p-2 rounded" style="background: rgba(245, 158, 11, 0.1);">
+                        <div class="h4 mb-1 text-warning">{{ data.monthly_stats.dimostrazione_count or 0 }}</div>
+                        <small class="text-muted">Dimostrazioni</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="text-center p-2 rounded" style="background: rgba(59, 130, 246, 0.1);">
+                        <div class="h4 mb-1 text-info">{{ data.monthly_stats.assistenza_count or 0 }}</div>
+                        <small class="text-muted">Assistenze</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Bar Obiettivo Mensile -->
+            <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">Progresso Obiettivo Mensile</small>
+                    <small class="text-muted">
+                        {{ data.monthly_stats.sold_this_month or 0 }}/{{ data.monthly_target or 10 }}
+                    </small>
+                </div>
+                {% set progress = ((data.monthly_stats.sold_this_month or 0) / (data.monthly_target or 10) * 100) %}
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-success" style="width: {{ progress if progress <= 100 else 100 }}%"></div>
+                </div>
+                <small class="text-muted">{{ "%.1f"|format(progress) }}% completato</small>
+            </div>
+        </div>
+
+        <!-- Confronto Mesi Precedenti -->
+        <div class="stats-card card p-3 mt-3">
+            <h6 class="mb-3"><i class="fas fa-chart-line me-2"></i>Confronto Ultimi 3 Mesi</h6>
+            <div class="chart-container" style="height: 200px;">
+                <canvas id="monthlyComparisonChart"></canvas>
+            </div>
+            
+            <!-- Trend Indicators -->
+            <div class="row mt-3">
+                <div class="col-4 text-center">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <i class="fas fa-arrow-up text-success me-2"></i>
+                        <span class="small">+15% vs mese scorso</span>
+                    </div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <i class="fas fa-arrow-up text-success me-2"></i>
+                        <span class="small">+8% vendite</span>
+                    </div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        <span class="small">Obiettivo: {{ "%.0f"|format(progress) }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grafico Performance Settimanale -->
+        <div class="chart-container">
+            <h6 class="mb-3"><i class="fas fa-chart-line me-2"></i>Performance Settimanale</h6>
+            <canvas id="weeklyChart"></canvas>
+        </div>
+
+        <!-- Azioni Rapide -->
+        <div class="row">
+            <div class="col-12">
+                <h6 class="text-white mb-3"><i class="fas fa-bolt me-2"></i>Azioni Rapide</h6>
+            </div>
+            <div class="col-6 col-md-3">
+                <button class="quick-action-btn" onclick="location.href='{{ url_for('dealer.appointments') }}'">
+                    <i class="fas fa-calendar-alt fa-2x mb-2"></i><br>
+                    <small>I Miei Appuntamenti</small>
+                </button>
+            </div>
+            <div class="col-6 col-md-3">
+                <button class="quick-action-btn" onclick="location.href='{{ url_for('dealer.stats') }}'">
+                    <i class="fas fa-chart-bar fa-2x mb-2"></i><br>
+                    <small>Statistiche</small>
+                </button>
+            </div>
+            <div class="col-6 col-md-3">
+                <button class="quick-action-btn" onclick="location.href='{{ url_for('dealer.profile') }}'">
+                    <i class="fas fa-user-cog fa-2x mb-2"></i><br>
+                    <small>Profilo</small>
+                </button>
+            </div>
+            <div class="col-6 col-md-3">
+                <button class="quick-action-btn" onclick="shareStats()">
+                    <i class="fas fa-share-alt fa-2x mb-2"></i><br>
+                    <small>Condividi</small>
+                </button>
+            </div>
+        </div>
+
+        <!-- Appuntamenti Recenti -->
+        <div class="stats-card card p-3 mt-3">
+            <h6 class="mb-3"><i class="fas fa-clock me-2"></i>Appuntamenti Recenti</h6>
+            {% if data.recent_appointments %}
+                {% for appointment in data.recent_appointments[:5] %}
+                <div class="recent-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ appointment.nome_cliente }}</strong><br>
+                            <small class="text-muted">{{ appointment.data_appuntamento.strftime('%d/%m/%Y %H:%M') }}</small>
+                        </div>
+                        <div>
+                            {% if appointment.venduto %}
+                                <span class="badge badge-success">Venduto</span>
+                            {% elif appointment.stato == 'da richiamare' %}
+                                <span class="badge badge-warning">Da Richiamare</span>
+                            {% else %}
+                                <span class="badge badge-info">{{ appointment.stato.title() }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted text-center py-3">Nessun appuntamento recente</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    
+    <script>
+        // Dati per i grafici
+        const weeklyData = {{ data.weekly_stats | tojson if data.weekly_stats else '{}' }};
+        const monthlyData = {{ data.monthly_comparison | tojson if data.monthly_comparison else '{"Giugno": {"total": 5, "sold": 2}, "Luglio": {"total": 8, "sold": 4}, "Agosto": {"total": ' + (data.monthly_stats.total_this_month or 0)|string + ', "sold": ' + (data.monthly_stats.sold_this_month or 0)|string + '}}' }};
+        
+        // Grafico settimanale
+        const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+        new Chart(weeklyCtx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(weeklyData).length > 0 ? Object.keys(weeklyData) : ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'],
+                datasets: [{
+                    label: 'Appuntamenti',
+                    data: Object.keys(weeklyData).length > 0 ? Object.values(weeklyData).map(d => d.total || 0) : [2, 3, 1, 4, 2, 1, 0],
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Vendite',
+                    data: Object.keys(weeklyData).length > 0 ? Object.values(weeklyData).map(d => d.sold || 0) : [1, 2, 0, 2, 1, 0, 0],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Grafico confronto mensile
+        const monthlyCtx = document.getElementById('monthlyComparisonChart').getContext('2d');
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(monthlyData),
+                datasets: [{
+                    label: 'Appuntamenti',
+                    data: Object.values(monthlyData).map(d => d.total || 0),
+                    backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                    borderColor: '#4f46e5',
+                    borderWidth: 2,
+                    borderRadius: 4
+                }, {
+                    label: 'Vendite',
+                    data: Object.values(monthlyData).map(d => d.sold || 0),
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 11
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Funzioni utility
+        function refreshData() {
+            // Mostra loading
+            const refreshBtn = document.querySelector('button[onclick="refreshData()"]');
+            if (refreshBtn) {
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                refreshBtn.disabled = true;
+            }
+            
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+
+        function shareStats() {
+            const monthlyTotal = {{ data.monthly_stats.total_this_month or 0 }};
+            const monthlySold = {{ data.monthly_stats.sold_this_month or 0 }};
+            const conversionRate = {{ "%.1f"|format((data.sold_appointments / data.total_appointments * 100) if data.total_appointments > 0 else 0) }};
+            
+            const shareText = `🎯 Le mie statistiche di Agosto 2025:\n` +
+                            `📅 ${monthlyTotal} appuntamenti questo mese\n` +
+                            `💰 ${monthlySold} vendite concluse\n` +
+                            `📈 ${conversionRate}% tasso di conversione\n\n` +
+                            `#Sales #Performance #Growth`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Le mie statistiche mensili',
+                    text: shareText,
+                    url: window.location.href
+                }).catch(console.error);
+            } else {
+                // Fallback: copia negli appunti
+                navigator.clipboard.writeText(shareText).then(() => {
+                    // Mostra notifica di successo
+                    showNotification('Statistiche copiate negli appunti!', 'success');
+                }).catch(() => {
+                    // Fallback per browser più vecchi
+                    const textArea = document.createElement('textarea');
+                    textArea.value = shareText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    showNotification('Statistiche copiate negli appunti!', 'success');
+                });
+            }
+        }
+
+        // Sistema di notifiche
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; opacity: 0; transition: opacity 0.3s ease;';
+            
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Mostra con animazione
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 100);
+            
+            // Auto-remove dopo 4 secondi
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // Enhanced Mobile Experience
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animazioni al caricamento
+            const cards = document.querySelectorAll('.stats-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+            
+            // Auto-refresh ogni 5 minuti
+            setInterval(() => {
+                console.log('Auto-refreshing data...');
+                // Qui potresti fare una chiamata AJAX per aggiornare solo i dati
+            }, 300000);
+            
+            // Mostra suggerimento AI se performance bassa
+            const conversionRate = {{ (data.sold_appointments / data.total_appointments * 100) if data.total_appointments > 0 else 0 }};
+            if (conversionRate < 30 && {{ data.total_appointments or 0 }} > 3) {
+                setTimeout(() => {
+                    if (confirm('🤖 Il tuo tasso di conversione è sotto il 30%. Vuoi che l\'AI ti suggerisca come migliorarlo?')) {
+                        if (window.aiAssistant) {
+                            window.aiAssistant.sendTextMessage('Il mio tasso di conversione è basso. Puoi analizzare i miei dati e suggerirmi strategie per migliorare le performance?');
+                            window.aiAssistant.show();
+                        }
+                    }
+                }, 3000);
+            }
+        });
+
+        // PWA-like experience
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+        }
+
+        // Pull-to-refresh simulation
+        let startY = 0;
+        let pulling = false;
+
+        document.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            const currentY = e.touches[0].clientY;
+            if (currentY > startY + 100 && window.scrollY === 0) {
+                pulling = true;
+                document.body.style.transform = 'translateY(10px)';
+                document.body.style.transition = 'transform 0.3s ease';
+            }
+        });
+
+        document.addEventListener('touchend', () => {
+            if (pulling) {
+                pulling = false;
+                document.body.style.transform = '';
+                showNotification('Aggiornamento dati...', 'info');
+                setTimeout(refreshData, 500);
+            }
+        });
+    </script>
+</body>
+</html>

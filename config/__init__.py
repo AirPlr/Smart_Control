@@ -1,0 +1,3 @@
+"""
+Package configurazione per AppointmentCRM
+"""

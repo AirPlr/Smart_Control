@@ -1,0 +1,411 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Impostazioni Tema{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('admin.settings') }}">Impostazioni</a></li>
+<li class="breadcrumb-item active">Personalizzazione Tema</li>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">
+            <i class="fas fa-palette me-2 text-primary"></i>Personalizzazione Tema
+        </h1>
+        <p class="text-muted mb-0">Scegli e personalizza l'aspetto della tua area amministrativa</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="admin-btn btn-outline-secondary" onclick="resetToDefault()">
+            <i class="fas fa-undo me-2"></i>Reset Default
+        </button>
+        <button class="admin-btn btn-success" onclick="saveThemeSettings()">
+            <i class="fas fa-save me-2"></i>Salva Impostazioni
+        </button>
+    </div>
+</div>
+
+<!-- Current Theme Info -->
+<div class="admin-card mb-4">
+    <div class="admin-card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-1">
+                    <i class="fas fa-paintbrush me-2"></i>Tema Attuale: 
+                    <span class="text-primary" id="currentThemeName">{{ current_user.theme.title() }}</span>
+                </h5>
+                <p class="text-muted mb-0">Il tema influenza colori, stili e l'aspetto generale dell'interfaccia admin</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="theme-preview-mini" id="currentThemePreview">
+                    <div class="preview-sidebar"></div>
+                    <div class="preview-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Galleria Temi -->
+<div class="row">
+    <!-- Tema Default -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="admin-card theme-card" data-theme="default">
+            <div class="theme-preview" data-theme="default">
+                <div class="preview-sidebar bg-gradient-primary"></div>
+                <div class="preview-content">
+                    <div class="preview-header"></div>
+                    <div class="preview-metrics">
+                        <div class="metric bg-gradient-primary"></div>
+                        <div class="metric bg-gradient-primary"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body text-center">
+                <h6 class="mb-2">Default (Blu/Viola)</h6>
+                <p class="text-muted small mb-3">Tema professionale con gradiente blu-viola</p>
+                <button class="admin-btn btn-primary btn-sm" onclick="applyTheme('default')">
+                    <i class="fas fa-check me-2"></i>Applica
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tema Dark -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="admin-card theme-card" data-theme="dark">
+            <div class="theme-preview" data-theme="dark">
+                <div class="preview-sidebar bg-dark"></div>
+                <div class="preview-content bg-dark">
+                    <div class="preview-header bg-secondary"></div>
+                    <div class="preview-metrics">
+                        <div class="metric bg-secondary"></div>
+                        <div class="metric bg-secondary"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body text-center">
+                <h6 class="mb-2">Dark Mode</h6>
+                <p class="text-muted small mb-3">Tema scuro per ridurre l'affaticamento degli occhi</p>
+                <button class="admin-btn btn-dark btn-sm" onclick="applyTheme('dark')">
+                    <i class="fas fa-moon me-2"></i>Applica
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tema Ocean -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="admin-card theme-card" data-theme="ocean">
+            <div class="theme-preview" data-theme="ocean">
+                <div class="preview-sidebar" style="background: linear-gradient(135deg, #006266, #00a8cc);"></div>
+                <div class="preview-content">
+                    <div class="preview-header"></div>
+                    <div class="preview-metrics">
+                        <div class="metric" style="background: linear-gradient(135deg, #006266, #00a8cc);"></div>
+                        <div class="metric" style="background: linear-gradient(135deg, #006266, #00a8cc);"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body text-center">
+                <h6 class="mb-2">Ocean (Blu Oceano)</h6>
+                <p class="text-muted small mb-3">Colori ispirati al mare e all'oceano</p>
+                <button class="admin-btn btn-info btn-sm" onclick="applyTheme('ocean')">
+                    <i class="fas fa-water me-2"></i>Applica
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tema Sunset -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="admin-card theme-card" data-theme="sunset">
+            <div class="theme-preview" data-theme="sunset">
+                <div class="preview-sidebar" style="background: linear-gradient(135deg, #ff6b6b, #ffa500);"></div>
+                <div class="preview-content">
+                    <div class="preview-header"></div>
+                    <div class="preview-metrics">
+                        <div class="metric" style="background: linear-gradient(135deg, #ff6b6b, #ffa500);"></div>
+                        <div class="metric" style="background: linear-gradient(135deg, #ff6b6b, #ffa500);"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body text-center">
+                <h6 class="mb-2">Sunset (Arancione/Rosa)</h6>
+                <p class="text-muted small mb-3">Colori caldi del tramonto</p>
+                <button class="admin-btn btn-warning btn-sm" onclick="applyTheme('sunset')">
+                    <i class="fas fa-sun me-2"></i>Applica
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tema Forest -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="admin-card theme-card" data-theme="forest">
+            <div class="theme-preview" data-theme="forest">
+                <div class="preview-sidebar" style="background: linear-gradient(135deg, #27ae60, #2d3436);"></div>
+                <div class="preview-content">
+                    <div class="preview-header"></div>
+                    <div class="preview-metrics">
+                        <div class="metric" style="background: linear-gradient(135deg, #27ae60, #2d3436);"></div>
+                        <div class="metric" style="background: linear-gradient(135deg, #27ae60, #2d3436);"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body text-center">
+                <h6 class="mb-2">Forest (Verde)</h6>
+                <p class="text-muted small mb-3">Ispirato alla natura e alle foreste</p>
+                <button class="admin-btn btn-success btn-sm" onclick="applyTheme('forest')">
+                    <i class="fas fa-tree me-2"></i>Applica
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tema Purple -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="admin-card theme-card" data-theme="purple">
+            <div class="theme-preview" data-theme="purple">
+                <div class="preview-sidebar" style="background: linear-gradient(135deg, #8e44ad, #c0392b);"></div>
+                <div class="preview-content">
+                    <div class="preview-header"></div>
+                    <div class="preview-metrics">
+                        <div class="metric" style="background: linear-gradient(135deg, #8e44ad, #c0392b);"></div>
+                        <div class="metric" style="background: linear-gradient(135deg, #8e44ad, #c0392b);"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body text-center">
+                <h6 class="mb-2">Purple (Viola/Magenta)</h6>
+                <p class="text-muted small mb-3">Elegante combinazione viola-magenta</p>
+                <button class="admin-btn btn-secondary btn-sm" onclick="applyTheme('purple')">
+                    <i class="fas fa-gem me-2"></i>Applica
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Impostazioni Avanzate -->
+<div class="admin-card mt-4">
+    <div class="admin-card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-cogs me-2"></i>Impostazioni Avanzate
+        </h5>
+    </div>
+    <div class="admin-card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Animazioni</h6>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="enableAnimations" checked>
+                    <label class="form-check-label" for="enableAnimations">
+                        Abilita animazioni interfaccia
+                    </label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="reducedMotion">
+                    <label class="form-check-label" for="reducedMotion">
+                        Riduci movimento (accessibilità)
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6>Layout</h6>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="compactMode">
+                    <label class="form-check-label" for="compactMode">
+                        Modalità compatta
+                    </label>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="fixedSidebar" checked>
+                    <label class="form-check-label" for="fixedSidebar">
+                        Sidebar fissa
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.theme-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+.theme-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.theme-card.active {
+    border: 2px solid var(--admin-primary);
+    transform: translateY(-5px);
+}
+
+.theme-preview {
+    height: 120px;
+    border-radius: var(--admin-radius-small);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+}
+
+.preview-sidebar {
+    width: 30%;
+    background: var(--admin-primary);
+}
+
+.preview-content {
+    flex: 1;
+    background: #f8f9fa;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preview-header {
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 4px;
+}
+
+.preview-metrics {
+    display: flex;
+    gap: 5px;
+    flex: 1;
+}
+
+.metric {
+    flex: 1;
+    background: var(--admin-primary);
+    border-radius: 4px;
+}
+
+.theme-preview-mini {
+    width: 100px;
+    height: 60px;
+    border-radius: var(--admin-radius-small);
+    overflow: hidden;
+    display: flex;
+    box-shadow: var(--admin-shadow);
+}
+
+.theme-preview-mini .preview-sidebar {
+    width: 30%;
+    background: var(--admin-primary);
+}
+
+.theme-preview-mini .preview-content {
+    flex: 1;
+    background: var(--admin-bg-light);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function applyTheme(themeName) {
+    // Marca il tema come attivo visualmente
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    document.querySelector(`[data-theme="${themeName}"]`).classList.add('active');
+    
+    // Applica il tema immediatamente
+    document.documentElement.setAttribute('data-theme', themeName);
+    document.getElementById('currentThemeName').textContent = themeName.charAt(0).toUpperCase() + themeName.slice(1);
+    
+    // Salva sul server
+    fetch('/admin/change-theme', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ theme: themeName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Tema "${themeName}" applicato con successo!`, 'success');
+        } else {
+            showNotification('Errore nel cambio tema', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Errore di connessione', 'error');
+    });
+}
+
+function resetToDefault() {
+    applyTheme('default');
+}
+
+function saveThemeSettings() {
+    const settings = {
+        animations: document.getElementById('enableAnimations').checked,
+        reducedMotion: document.getElementById('reducedMotion').checked,
+        compactMode: document.getElementById('compactMode').checked,
+        fixedSidebar: document.getElementById('fixedSidebar').checked
+    };
+    
+    // Salva le impostazioni aggiuntive
+    fetch('/admin/save-theme-settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Impostazioni salvate con successo!', 'success');
+        } else {
+            showNotification('Errore nel salvataggio', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Errore di connessione', 'error');
+    });
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 4000);
+}
+
+// Inizializza la pagina
+document.addEventListener('DOMContentLoaded', function() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'default';
+    
+    // Marca il tema attuale come attivo
+    document.querySelector(`[data-theme="${currentTheme}"]`)?.classList.add('active');
+    
+    // Aggiorna il nome del tema corrente
+    document.getElementById('currentThemeName').textContent = 
+        currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1);
+});
+</script>
+{% endblock %}

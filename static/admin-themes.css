@@ -1,0 +1,400 @@
+/* =====================================================
+   ADMIN THEMES - Sistema Controllo Appuntamenti
+   ===================================================== */
+
+/* ===============================================
+   TEMA BASE E VARIABILI COMUNI
+   =============================================== */
+
+:root {
+    /* Colori base */
+    --admin-text-primary: #2c3e50;
+    --admin-text-secondary: #6c757d;
+    --admin-bg-light: #f8f9fa;
+    --admin-white: #ffffff;
+    --admin-border: #dee2e6;
+    
+    /* Effetti e transizioni */
+    --admin-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    --admin-shadow-hover: 0 8px 25px rgba(0,0,0,0.15);
+    --admin-radius: 15px;
+    --admin-radius-small: 8px;
+    --admin-transition: all 0.3s ease;
+}
+
+/* ===============================================
+   STILI BASE CONDIVISI
+   =============================================== */
+
+.admin-layout {
+    min-height: 100vh;
+    background-color: var(--admin-bg-light);
+}
+
+.admin-sidebar {
+    min-height: 100vh;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    border-radius: 0 var(--admin-radius) var(--admin-radius) 0;
+    position: sticky;
+    top: 0;
+}
+
+.admin-content {
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+/* Cards unificati */
+.admin-card {
+    border: none;
+    border-radius: var(--admin-radius);
+    box-shadow: var(--admin-shadow);
+    transition: var(--admin-transition);
+    background: var(--admin-white);
+}
+
+.admin-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--admin-shadow-hover);
+}
+
+.admin-card-header {
+    background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+    color: white;
+    border-radius: var(--admin-radius) var(--admin-radius) 0 0;
+    padding: 1.25rem;
+    border: none;
+}
+
+.admin-card-body {
+    padding: 1.5rem;
+}
+
+/* Metriche unificate */
+.admin-metric-card {
+    background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+    color: white;
+    border-radius: var(--admin-radius);
+    padding: 2rem;
+    text-align: center;
+    border: none;
+    transition: var(--admin-transition);
+}
+
+.admin-metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--admin-shadow-hover);
+}
+
+.admin-metric-value {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.admin-metric-label {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+/* Pulsanti unificati */
+.admin-btn {
+    border-radius: var(--admin-radius-small);
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: var(--admin-transition);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.admin-btn:hover::before {
+    left: 100%;
+}
+
+/* Navigation sidebar */
+.admin-nav {
+    padding: 1rem 0;
+}
+
+.admin-nav-link {
+    color: rgba(255,255,255,0.8);
+    padding: 12px 20px;
+    border-radius: var(--admin-radius-small);
+    margin: 4px 15px;
+    transition: var(--admin-transition);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.admin-nav-link:hover {
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+    transform: translateX(5px);
+}
+
+.admin-nav-link.active {
+    background-color: rgba(255,255,255,0.3);
+    color: white;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.admin-nav-link i {
+    margin-right: 0.75rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* Tables */
+.admin-table {
+    border-radius: var(--admin-radius);
+    overflow: hidden;
+    box-shadow: var(--admin-shadow);
+}
+
+.admin-table thead {
+    background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+    color: white;
+}
+
+.admin-table tbody tr {
+    transition: var(--admin-transition);
+}
+
+.admin-table tbody tr:hover {
+    background-color: var(--admin-bg-light);
+    transform: scale(1.01);
+}
+
+/* ===============================================
+   TEMA DEFAULT (Blu/Viola)
+   =============================================== */
+
+[data-theme="default"] {
+    --admin-primary: #667eea;
+    --admin-secondary: #764ba2;
+    --admin-accent: #4fa8da;
+    --admin-success: #28a745;
+    --admin-warning: #ffc107;
+    --admin-danger: #dc3545;
+    --admin-info: #17a2b8;
+}
+
+[data-theme="default"] .admin-sidebar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+[data-theme="default"] .welcome-card {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+}
+
+/* ===============================================
+   TEMA DARK (Nero/Grigio scuro)
+   =============================================== */
+
+[data-theme="dark"] {
+    --admin-primary: #2c3e50;
+    --admin-secondary: #34495e;
+    --admin-accent: #3498db;
+    --admin-success: #27ae60;
+    --admin-warning: #f39c12;
+    --admin-danger: #e74c3c;
+    --admin-info: #16a085;
+    --admin-bg-light: #1a1a1a;
+    --admin-white: #2c2c2c;
+    --admin-text-primary: #ecf0f1;
+    --admin-text-secondary: #bdc3c7;
+}
+
+[data-theme="dark"] .admin-sidebar {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+[data-theme="dark"] .admin-content {
+    background-color: #1a1a1a;
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] .welcome-card {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] .admin-card {
+    background-color: #2c2c2c;
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] .table {
+    color: #ecf0f1;
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+    background-color: #34495e;
+}
+
+/* ===============================================
+   TEMA OCEAN (Blu oceano/Teal)
+   =============================================== */
+
+[data-theme="ocean"] {
+    --admin-primary: #006266;
+    --admin-secondary: #00a8cc;
+    --admin-accent: #40e0d0;
+    --admin-success: #20bf6b;
+    --admin-warning: #f7b801;
+    --admin-danger: #eb4d4b;
+    --admin-info: #0abde3;
+}
+
+[data-theme="ocean"] .admin-sidebar {
+    background: linear-gradient(135deg, #006266 0%, #00a8cc 100%);
+}
+
+[data-theme="ocean"] .welcome-card {
+    background: linear-gradient(135deg, #00a8cc 0%, #40e0d0 100%);
+    color: white;
+}
+
+/* ===============================================
+   TEMA SUNSET (Arancione/Rosa)
+   =============================================== */
+
+[data-theme="sunset"] {
+    --admin-primary: #ff6b6b;
+    --admin-secondary: #ffa500;
+    --admin-accent: #ff8c94;
+    --admin-success: #6bcf7f;
+    --admin-warning: #ffd93d;
+    --admin-danger: #ff4757;
+    --admin-info: #3742fa;
+}
+
+[data-theme="sunset"] .admin-sidebar {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+}
+
+[data-theme="sunset"] .welcome-card {
+    background: linear-gradient(135deg, #ff8c94 0%, #ff6b6b 100%);
+    color: white;
+}
+
+/* ===============================================
+   TEMA FOREST (Verde/Verde scuro)
+   =============================================== */
+
+[data-theme="forest"] {
+    --admin-primary: #27ae60;
+    --admin-secondary: #2d3436;
+    --admin-accent: #55a3ff;
+    --admin-success: #00b894;
+    --admin-warning: #fdcb6e;
+    --admin-danger: #e17055;
+    --admin-info: #74b9ff;
+}
+
+[data-theme="forest"] .admin-sidebar {
+    background: linear-gradient(135deg, #27ae60 0%, #2d3436 100%);
+}
+
+[data-theme="forest"] .welcome-card {
+    background: linear-gradient(135deg, #55a3ff 0%, #27ae60 100%);
+    color: white;
+}
+
+/* ===============================================
+   TEMA PURPLE (Viola/Magenta)
+   =============================================== */
+
+[data-theme="purple"] {
+    --admin-primary: #8e44ad;
+    --admin-secondary: #c0392b;
+    --admin-accent: #e056fd;
+    --admin-success: #27ae60;
+    --admin-warning: #f39c12;
+    --admin-danger: #e74c3c;
+    --admin-info: #3498db;
+}
+
+[data-theme="purple"] .admin-sidebar {
+    background: linear-gradient(135deg, #8e44ad 0%, #c0392b 100%);
+}
+
+[data-theme="purple"] .welcome-card {
+    background: linear-gradient(135deg, #e056fd 0%, #8e44ad 100%);
+    color: white;
+}
+
+/* ===============================================
+   ANIMAZIONI E EFFETTI SPECIALI
+   =============================================== */
+
+@keyframes slideInFromLeft {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    0% {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+    }
+    50% { 
+        transform: scale(1.05); 
+    }
+}
+
+.admin-animate-in {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.admin-sidebar {
+    animation: slideInFromLeft 0.8s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-content {
+        padding: 1rem;
+    }
+    
+    .admin-metric-value {
+        font-size: 2rem;
+    }
+    
+    .admin-sidebar {
+        position: relative;
+        animation: none;
+    }
+}

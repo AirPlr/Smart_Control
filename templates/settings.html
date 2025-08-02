@@ -294,7 +294,7 @@
             </div>
         </div>
         <div class="text-center mt-4">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Torna alla Home</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Torna alla Home</a>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -412,72 +412,20 @@
             });
         });
 
-        // On load, restore theme
+        // On load, imposta il tema preferito dell'utente (dal backend)
         window.addEventListener('DOMContentLoaded', function() {
-            const savedTheme = localStorage.getItem('selectedTheme') || 'dark';
-            const savedMode = localStorage.getItem('selectedMode') || 'light';
-            selectedTheme = savedTheme;
-            selectedMode = savedMode;
-            applyTheme(savedTheme, savedMode);
+            {% if user.settings and user.settings.theme %}
+            selectedTheme = '{{ user.settings.theme }}';
+            {% else %}
+            selectedTheme = 'dark';
+            {% endif %}
+            selectedMode = 'light'; // Puoi estendere per supportare anche la modalità
+            applyTheme(selectedTheme, selectedMode);
             // Seleziona il tema e la modalità corretti nell'interfaccia
-            const themeIdx = ['dark','sunny','blue','sunset'].indexOf(savedTheme);
+            const themeIdx = ['dark','sunny','blue','sunset'].indexOf(selectedTheme);
             if (themeIdx >= 0) {
                 document.querySelectorAll('.theme-preview')[themeIdx].classList.add('selected');
             }
             document.querySelectorAll('.mode-select').forEach(m => m.classList.remove('selected'));
-            const selectedModeDiv = document.querySelector(`.mode-select[data-mode="${savedMode}"]`);
-            if (selectedModeDiv) selectedModeDiv.classList.add('selected');
-            changePreview(savedTheme, savedMode);
-        });
-
-        // Reload CSS dynamically
-        function reloadCSS() {
-            const links = document.querySelectorAll('link[rel="stylesheet"]');
-            links.forEach(link => {
-                if (link.href.includes('styles.css')) {
-                    const newHref = link.href.split('?')[0] + '?v=' + new Date().getTime();
-                    link.href = newHref;
-                }
-            });
-        }
-        // Gestione posizioni dinamica
-function loadPositions() {
-    fetch('/positions')
-        .then(r => r.json())
-        .then(data => {
-            const list = document.getElementById('positions-list');
-            const emptyMsg = document.getElementById('positions-empty-msg');
-            list.innerHTML = '';
-            if (!data.length) {
-                emptyMsg.style.display = '';
-                list.appendChild(emptyMsg);
-            } else {
-                emptyMsg.style.display = 'none';
-                data.forEach(pos => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    li.innerHTML = `<span>${pos.nome}</span> <button class='btn btn-danger btn-sm' onclick='deletePosition(${pos.id})'>Elimina</button>`;
-                    list.appendChild(li);
-                });
-            }
-        });
-}
-function deletePosition(id) {
-    fetch('/positions', {method: 'DELETE', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: `id=${id}`})
-        .then(r => r.json())
-        .then(() => loadPositions());
-}
-document.getElementById('add-position-btn').onclick = function() {
-    const name = document.getElementById('new-position-name').value.trim();
-    if (!name) return;
-    fetch('/positions', {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: `nome=${encodeURIComponent(name)}`})
-        .then(r => r.json())
-        .then(() => {
-            document.getElementById('new-position-name').value = '';
-            loadPositions();
-        });
-};
-document.addEventListener('DOMContentLoaded', loadPositions);
-    </script>
-</body>
-</html>
+            const selectedModeDiv = document.querySelector(`.mode-select[data-mode="${selectedMode}"]`);
+            if

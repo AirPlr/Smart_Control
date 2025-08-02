@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione VPN - Admin</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .vpn-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+        .status-offline { background: #ef4444; }
+        .status-unknown { background: #f59e0b; }
+        
+        .terminal-output {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .tailscale-logo {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        
+        .connection-list {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-shield-alt me-2"></i>Gestione VPN</h2>
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tailscale Management -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="vpn-card card p-4">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="tailscale-logo">TS</div>
+                        </div>
+                        <div class="col">
+                            <h4 class="mb-1">Tailscale VPN</h4>
+                            <p class="mb-0 opacity-75">Secure network tunneling</p>
+                        </div>
+                        <div class="col-auto">
+                            <div class="d-flex align-items-center">
+                                <span class="status-indicator status-unknown" id="tailscale-indicator"></span>
+                                <span id="tailscale-status-text">Checking...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4" style="border-color: rgba(255,255,255,0.2);">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-cogs me-2"></i>Controlli</h6>
+                            <div class="btn-group w-100 mb-3" role="group">
+                                <button class="btn btn-outline-light" onclick="tailscaleAction('up')" id="btn-up">
+                                    <i class="fas fa-power-off me-2"></i>Avvia
+                                </button>
+                                <button class="btn btn-outline-light" onclick="tailscaleAction('down')" id="btn-down">
+                                    <i class="fas fa-stop me-2"></i>Ferma
+                                </button>
+                                <button class="btn btn-outline-light" onclick="checkTailscaleStatus()">
+                                    <i class="fas fa-sync-alt me-2"></i>Aggiorna
+                                </button>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Comandi Rapidi</label>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-light btn-sm" onclick="tailscaleCommand('ip')">
+                                        <i class="fas fa-network-wired me-2"></i>Mostra IP
+                                    </button>
+                                    <button class="btn btn-outline-light btn-sm" onclick="tailscaleCommand('netcheck')">
+                                        <i class="fas fa-wifi me-2"></i>Test Rete
+                                    </button>
+                                    <button class="btn btn-outline-light btn-sm" onclick="tailscaleCommand('ping')">
+                                        <i class="fas fa-satellite-dish me-2"></i>Ping Coordinator
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-terminal me-2"></i>Output</h6>
+                            <div class="terminal-output" id="tailscale-output">
+                                Clicca su "Aggiorna" per vedere lo status...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other VPN Solutions -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-key me-2"></i>WireGuard</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Fast, modern, secure VPN tunnel.</p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="checkService('wg-quick')">
+                                <i class="fas fa-search me-2"></i>Controlla Status
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="installPackage('wireguard')">
+                                <i class="fas fa-download me-2"></i>Installa WireGuard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="fas fa-lock me-2"></i>OpenVPN</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">Traditional, reliable VPN solution.</p>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="checkService('openvpn')">
+                                <i class="fas fa-search me-2"></i>Controlla Status
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="installPackage('openvpn')">
+                                <i class="fas fa-download me-2"></i>Installa OpenVPN
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Information -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informazioni di Rete</h6>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary me-2" onclick="getNetworkInfo()">
+                            <i class="fas fa-sync-alt me-2"></i>Aggiorna Info
+                        </button>
+                        <div class="terminal-output mt-3" id="network-info">
+                            Clicca "Aggiorna Info" per vedere le informazioni di rete...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Controlla status Tailscale all'avvio
+        document.addEventListener('DOMContentLoaded', checkTailscaleStatus);
+
+        async function checkTailscaleStatus() {
+            try {
+                const response = await fetch('{{ url_for("admin.tailscale_status") }}');
+                const data = await response.json();
+                
+                const indicator = document.getElementById('tailscale-indicator');
+                const statusText = document.getElementById('tailscale-status-text');
+                const output = document.getElementById('tailscale-output');
+                
+                if (!data.installed) {
+                    indicator.className = 'status-indicator status-offline';
+                    statusText.textContent = 'Non Installato';
+                    output.textContent = 'Tailscale non è installato su questo sistema.\n\nPer installarlo:\n- Ubuntu/Debian: curl -fsSL https://tailscale.com/install.sh | sh\n- Windows: Scarica da https://tailscale.com/download';
+                } else if (data.running) {
+                    indicator.className = 'status-indicator status-online';
+                    statusText.textContent = 'Online';
+                    output.textContent = data.status;
+                } else {
+                    indicator.className = 'status-indicator status-offline';
+                    statusText.textContent = 'Offline';
+                    output.textContent = data.error || 'Tailscale è installato ma non attivo';
+                }
+                
+            } catch (error) {
+                console.error('Errore nel controllo status:', error);
+                document.getElementById('tailscale-status-text').textContent = 'Errore';
+                document.getElementById('tailscale-output').textContent = 'Errore nella comunicazione con il server';
+            }
+        }
+
+        async function tailscaleAction(action) {
+            const output = document.getElementById('tailscale-output');
+            output.textContent = `Eseguendo ${action}...`;
+            
+            try {
+                const response = await fetch('{{ url_for("admin.tailscale_toggle") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action: action })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    output.textContent = `✅ ${data.message}\n\n${data.output}`;
+                    // Aggiorna status dopo l'azione
+                    setTimeout(checkTailscaleStatus, 2000);
+                } else {
+                    output.textContent = `❌ Errore: ${data.error}`;
+                }
+                
+            } catch (error) {
+                output.textContent = `❌ Errore di rete: ${error.message}`;
+            }
+        }
+
+        async function tailscaleCommand(cmd) {
+            const output = document.getElementById('tailscale-output');
+            output.textContent = `Eseguendo tailscale ${cmd}...`;
+            
+            const commands = {
+                'ip': 'tailscale ip',
+                'netcheck': 'tailscale netcheck',
+                'ping': 'tailscale ping coordinator'
+            };
+            
+            try {
+                const response = await fetch('{{ url_for("admin.execute_command") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `command=${encodeURIComponent(commands[cmd])}`
+                });
+                
+                const data = await response.json();
+                output.textContent = data.output;
+                
+            } catch (error) {
+                output.textContent = `❌ Errore: ${error.message}`;
+            }
+        }
+
+        async function checkService(service) {
+            const output = document.getElementById('network-info');
+            output.textContent = `Controllando servizio ${service}...`;
+            
+            try {
+                const response = await fetch('{{ url_for("admin.execute_command") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `command=systemctl status ${service}`
+                });
+                
+                const data = await response.json();
+                output.textContent = data.output;
+                
+            } catch (error) {
+                output.textContent = `❌ Errore: ${error.message}`;
+            }
+        }
+
+        async function installPackage(package) {
+            const output = document.getElementById('network-info');
+            output.textContent = `⚠️ L'installazione di pacchetti richiede accesso root.\n\nComandi suggeriti:\n- Ubuntu/Debian: sudo apt install ${package}\n- CentOS/RHEL: sudo yum install ${package}\n- Arch: sudo pacman -S ${package}`;
+        }
+
+        async function getNetworkInfo() {
+            const output = document.getElementById('network-info');
+            output.textContent = 'Raccogliendo informazioni di rete...';
+            
+            const commands = ['ip addr show', 'netstat -tuln', 'ss -tuln'];
+            let results = '';
+            
+            for (const cmd of commands) {
+                try {
+                    const response = await fetch('{{ url_for("admin.execute_command") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `command=${encodeURIComponent(cmd)}`
+                    });
+                    
+                    const data = await response.json();
+                    results += `\n=== ${cmd} ===\n${data.output}\n`;
+                    
+                } catch (error) {
+                    results += `\n=== ${cmd} ===\n❌ Errore: ${error.message}\n`;
+                }
+            }
+            
+            output.textContent = results;
+        }
+
+        // Auto-refresh status ogni 30 secondi
+        setInterval(checkTailscaleStatus, 30000);
+        
+        // AI Assistant Integration per VPN
+        window.askAIVPN = function(question) {
+            if (window.aiAssistant) {
+                window.aiAssistant.show();
+                window.aiAssistant.sendTextMessage(question + ' - basandoti sullo stato VPN corrente mostrato in questa pagina');
+            } else {
+                alert('AI Assistant non disponibile');
+            }
+        };
+        
+        // Auto-analisi VPN all'apertura pagina
+        setTimeout(() => {
+            if (window.aiAssistant && !sessionStorage.getItem('vpn_ai_suggested')) {
+                sessionStorage.setItem('vpn_ai_suggested', 'true');
+                
+                // Mostra notifica con opzione analisi AI
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+                notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 350px;';
+                notification.innerHTML = `
+                    <i class="fas fa-robot me-2"></i>
+                    <strong>AI Assistant</strong> può analizzare lo stato VPN.
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="askAIVPN('Fornisci analisi completa VPN'); this.parentElement.remove();">
+                        Analizza
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(notification);
+                
+                // Auto-remove dopo 10 secondi
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 10000);
+            }
+        }, 3000);
+    </script>
+    
+    <!-- AI VPN Quick Actions -->
+    <div class="position-fixed" style="bottom: 100px; right: 20px; z-index: 1000;">
+        <div class="dropdown dropup">
+            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-robot"></i> AI VPN
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="askAIVPN('Analizza lo stato della VPN')">Stato VPN</a></li>
+                <li><a class="dropdown-item" href="#" onclick="askAIVPN('Suggerimenti ottimizzazione')">Ottimizzazione</a></li>
+                <li><a class="dropdown-item" href="#" onclick="askAIVPN('Troubleshooting connessione')">Troubleshoot</a></li>
+                <li><a class="dropdown-item" href="#" onclick="askAIVPN('Best practices sicurezza VPN')">Sicurezza</a></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

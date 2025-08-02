@@ -1,0 +1,417 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Gestione Utenti{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Gestione Utenti</li>
+{% endblock %}
+
+{% block content %}
+<!-- Header con pulsante azione -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">
+            <i class="fas fa-users me-2 text-primary"></i>Gestione Utenti
+        </h1>
+        <p class="text-muted mb-0">Amministra utenti, consulenti e permessi del sistema</p>
+    </div>
+    <button class="admin-btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+        <i class="fas fa-plus me-2"></i>Nuovo Utente
+    </button>
+</div>
+
+<!-- Filtri -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h6 class="mb-0">
+            <i class="fas fa-filter me-2"></i>Filtri e Ricerca
+        </h6>
+    </div>
+    <div class="admin-card-body">
+        <div class="row">
+            <div class="col-md-3 mb-2">
+                <label class="form-label">Ruolo</label>
+                <select class="form-select" id="roleFilter">
+                    <option value="">Tutti i ruoli</option>
+                    <option value="admin">Admin</option>
+                    <option value="dealer">Dealer</option>
+                    <option value="consultant">Consulente</option>
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <label class="form-label">Stato</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">Tutti gli stati</option>
+                    <option value="active">Attivi</option>
+                    <option value="inactive">Inattivi</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Ricerca</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Cerca per nome utente o email...">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabella Utenti -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Lista Utenti
+            </h5>
+            <div class="d-flex gap-2">
+                <span class="badge bg-info">{{ users|length }} utenti totali</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-download me-1"></i>Esporta
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="exportUsers('csv')">
+                            <i class="fas fa-file-csv me-2"></i>CSV
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportUsers('excel')">
+                            <i class="fas fa-file-excel me-2"></i>Excel
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="admin-card-body p-0">
+        <div class="admin-table table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Ruolo</th>
+                        <th>Consulente</th>
+                        <th>Stato</th>
+                        <th>Ultimo Accesso</th>
+                        <th>Creato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>
+                            <strong>{{ user.username }}</strong>
+                            {% if user.role == 'admin' %}
+                                <span class="badge bg-danger ms-1">Admin</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.role == 'admin' %}
+                                <span class="badge bg-danger">Admin</span>
+                            {% elif user.role == 'dealer' %}
+                                <span class="badge bg-primary">Dealer</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ user.role|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.consultant %}
+                                <small class="text-muted">{{ user.consultant.nome }}</small>
+                                <br>
+                                <span class="badge bg-info">{{ user.consultant.posizione.nome if user.consultant.posizione else 'N/A' }}</span>
+                            {% else %}
+                                <span class="text-warning">❌ Nessun consulente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Attivo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inattivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.last_login %}
+                                {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                <span class="text-muted">Mai</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="editUser({{ user.id }})" title="Modifica">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                {% if user.is_active %}
+                                    <button class="btn btn-sm btn-outline-warning" 
+                                            onclick="toggleUserStatus({{ user.id }}, false)" title="Disattiva">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-success" 
+                                            onclick="toggleUserStatus({{ user.id }}, true)" title="Attiva">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                {% endif %}
+                                {% if user.id != current_user.id %}
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteUser({{ user.id }})" title="Elimina">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crea Utente -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crea Nuovo Utente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createUserForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Ruolo</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="dealer">Dealer</option>
+                            <option value="consultant">Consulente</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="language" class="form-label">Lingua</label>
+                        <select class="form-select" id="language" name="language">
+                            <option value="it">Italiano</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">Crea Utente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Modifica Utente -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifica Utente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId" name="user_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">Ruolo</label>
+                        <select class="form-select" id="editRole" name="role" required>
+                            <option value="dealer">Dealer</option>
+                            <option value="consultant">Consulente</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" name="is_active">
+                            <label class="form-check-label" for="editIsActive">
+                                Utente attivo
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPassword" class="form-label">Nuova Password (lascia vuoto per non modificare)</label>
+                        <input type="password" class="form-control" id="editPassword" name="password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filtri di ricerca
+document.getElementById('searchInput').addEventListener('input', filterUsers);
+document.getElementById('roleFilter').addEventListener('change', filterUsers);
+document.getElementById('statusFilter').addEventListener('change', filterUsers);
+
+function filterUsers() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const roleFilter = document.getElementById('roleFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const rows = document.querySelectorAll('#usersTableBody tr');
+    
+    rows.forEach(row => {
+        const username = row.cells[1].textContent.toLowerCase();
+        const email = row.cells[2].textContent.toLowerCase();
+        const role = row.cells[3].textContent.toLowerCase();
+        const status = row.cells[4].textContent.toLowerCase();
+        
+        const matchesSearch = username.includes(searchTerm) || email.includes(searchTerm);
+        const matchesRole = !roleFilter || role.includes(roleFilter);
+        const matchesStatus = !statusFilter || 
+            (statusFilter === 'active' && status.includes('attivo')) ||
+            (statusFilter === 'inactive' && status.includes('inattivo'));
+        
+        row.style.display = matchesSearch && matchesRole && matchesStatus ? '' : 'none';
+    });
+}
+
+// Crea utente
+document.getElementById('createUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    fetch('{{ url_for("admin.create_user") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Utente creato con successo!');
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore durante la creazione dell\'utente');
+    });
+});
+
+// Modifica utente
+function editUser(userId) {
+    fetch(`/admin/users/${userId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const user = data.user;
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUsername').value = user.username;
+            document.getElementById('editEmail').value = user.email;
+            document.getElementById('editRole').value = user.role;
+            document.getElementById('editIsActive').checked = user.is_active;
+            
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        }
+    });
+}
+
+document.getElementById('editUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    const userId = data.user_id;
+    
+    fetch(`/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Utente aggiornato con successo!');
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    });
+});
+
+// Toggle stato utente
+function toggleUserStatus(userId, status) {
+    fetch(`/admin/users/${userId}/toggle`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({is_active: status})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Errore: ' + data.message);
+        }
+    });
+}
+
+// Elimina utente
+function deleteUser(userId) {
+    if (confirm('Sei sicuro di voler eliminare questo utente? Questa azione non può essere annullata.')) {
+        fetch(`/admin/users/${userId}`, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Utente eliminato con successo!');
+                location.reload();
+            } else {
+                alert('Errore: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

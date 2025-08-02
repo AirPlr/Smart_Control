@@ -1,5 +1,4 @@
-{% extends "base.html" %}
-{% block head %}{% endblock %}
+{% extends 'base.html' %}
 {% block content %}
 <div class="text-center my-4">
   <a href="" class="btn btn-success">Gestione Whatsapp Business</a>
@@ -48,7 +47,6 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<!-- Eventuali script JS specifici della pagina -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   document.getElementById('generateQR').addEventListener('click', function() {
@@ -58,8 +56,8 @@
     if (text.trim() !== '') {
       new QRCode(qrContainer, {
         text: text,
-        width: 128,
-        height: 128
+        width: 200,
+        height: 200
       });
     }
   });

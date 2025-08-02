@@ -4,17 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultants</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/5.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.5.0/font/bootstrap-icons.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Consulenti</h1>
+    {% extends 'base.html' %}
+    {% block content %}
+    <div class="container mt-5">
+        <h2>Consulenti</h2>
         <table class="table table-striped mt-3">
             <thead>
                 <tr>
                     <th>Nome</th>
                     <th>Posizione</th>
                     <th>Responsabile</th>
+                    <th>Azioni</th>
                 </tr>
             </thead>
             <tbody>
@@ -29,17 +33,18 @@
                         {% endfor %}
                     </td>
                     <td>
-                        <a href="{{ url_for('modify_consultant', id=consultant.id) }}" class="btn btn-primary btn-sm">Modify</a>
-                        <a href="{{ url_for('delete_consultant', id=consultant.id) }}" class="btn btn-danger btn-sm">Delete</a>
+                        <a href="{{ url_for('main.modify_consultant', id=consultant.id) }}" class="btn btn-primary btn-sm me-1"><i class="bi bi-pencil"></i> Modifica</a>
+                        <a href="{{ url_for('main.delete_consultant', id=consultant.id) }}" class="btn btn-danger btn-sm" 
+                           onclick="return confirm('Sei sicuro di voler eliminare questo consulente?')"><i class="bi bi-trash"></i> Elimina</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         <div class="text-center mt-4">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Torna alla Home</a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Torna alla Home</a>
         </div>
     </div>
-    
+    {% endblock %}
 </body>
 </html>

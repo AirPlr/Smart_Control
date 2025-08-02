@@ -1,0 +1,324 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Console Sistema{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-terminal me-2"></i>Console Sistema
+    </h1>
+    <div class="btn-group">
+        <button class="btn btn-outline-primary" onclick="clearConsole()">
+            <i class="fas fa-trash me-2"></i>Pulisci
+        </button>
+        <button class="btn btn-outline-success" onclick="refreshSystemInfo()">
+            <i class="fas fa-sync me-2"></i>Aggiorna
+        </button>
+    </div>
+</div>
+
+<!-- Informazioni Sistema -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-server me-2"></i>Informazioni Sistema</h5>
+            </div>
+            <div class="card-body">
+                <div id="systemInfo">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-microchip me-2"></i>Stato Servizi</h5>
+            </div>
+            <div class="card-body">
+                <div id="servicesInfo">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Console Comandi -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-keyboard me-2"></i>Console Comandi</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <input type="text" class="form-control" id="commandInput" 
+                       placeholder="Inserisci comando (solo comandi sicuri consentiti)">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary w-100" onclick="executeCommand()">
+                    <i class="fas fa-play me-2"></i>Esegui
+                </button>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Comandi Rapidi:</label>
+            <div class="btn-group-sm" role="group">
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('ls')">ls</button>
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('pwd')">pwd</button>
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('whoami')">whoami</button>
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('date')">date</button>
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('uptime')">uptime</button>
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('df -h')">df -h</button>
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('free -h')">free -h</button>
+                <button class="btn btn-outline-secondary me-1 mb-1" onclick="setCommand('ps aux')">ps aux</button>
+            </div>
+        </div>
+        
+        <div class="console-output bg-dark text-light p-3 rounded" style="height: 400px; overflow-y: auto; font-family: 'Courier New', monospace;">
+            <div id="consoleOutput">
+                <div class="text-success">Sistema Console Amministratore - Pronto</div>
+                <div class="text-muted">Utilizza i comandi rapidi o digita un comando nella casella sopra.</div>
+                <div class="text-warning">⚠️ Solo comandi sicuri sono consentiti per motivi di sicurezza.</div>
+                <br>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Sistema -->
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Log Sistema</h5>
+        <button class="btn btn-sm btn-outline-primary" onclick="refreshLogs()">
+            <i class="fas fa-sync me-1"></i>Aggiorna
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Log Applicazione</h6>
+                <div class="log-container bg-light p-2 rounded" style="height: 200px; overflow-y: auto; font-size: 12px;">
+                    <div id="appLogs">
+                        <div class="text-muted">Caricamento log applicazione...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6>Log Sistema</h6>
+                <div class="log-container bg-light p-2 rounded" style="height: 200px; overflow-y: auto; font-size: 12px;">
+                    <div id="systemLogs">
+                        <div class="text-muted">Caricamento log sistema...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variabili globali
+let commandHistory = [];
+let historyIndex = -1;
+
+// Inizializzazione
+document.addEventListener('DOMContentLoaded', function() {
+    refreshSystemInfo();
+    
+    // Gestione input comandi
+    const commandInput = document.getElementById('commandInput');
+    commandInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            executeCommand();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            navigateHistory('up');
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            navigateHistory('down');
+        }
+    });
+});
+
+// Esegui comando
+function executeCommand() {
+    const commandInput = document.getElementById('commandInput');
+    const command = commandInput.value.trim();
+    
+    if (!command) return;
+    
+    // Aggiungi alla cronologia
+    commandHistory.push(command);
+    historyIndex = commandHistory.length;
+    
+    // Mostra comando nella console
+    appendToConsole(`<div class="text-info">$ ${command}</div>`);
+    
+    // Invia comando al server
+    fetch('{{ url_for("admin.execute_command") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `command=${encodeURIComponent(command)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        const outputClass = data.success ? 'text-light' : 'text-danger';
+        appendToConsole(`<div class="${outputClass}">${escapeHtml(data.output)}</div>`);
+    })
+    .catch(error => {
+        appendToConsole(`<div class="text-danger">Errore: ${error.message}</div>`);
+    });
+    
+    // Pulisci input
+    commandInput.value = '';
+}
+
+// Naviga nella cronologia comandi
+function navigateHistory(direction) {
+    if (direction === 'up' && historyIndex > 0) {
+        historyIndex--;
+        document.getElementById('commandInput').value = commandHistory[historyIndex];
+    } else if (direction === 'down' && historyIndex < commandHistory.length - 1) {
+        historyIndex++;
+        document.getElementById('commandInput').value = commandHistory[historyIndex];
+    } else if (direction === 'down' && historyIndex === commandHistory.length - 1) {
+        historyIndex = commandHistory.length;
+        document.getElementById('commandInput').value = '';
+    }
+}
+
+// Imposta comando rapido
+function setCommand(command) {
+    document.getElementById('commandInput').value = command;
+    document.getElementById('commandInput').focus();
+}
+
+// Aggiungi output alla console
+function appendToConsole(html) {
+    const output = document.getElementById('consoleOutput');
+    output.innerHTML += html + '<br>';
+    output.scrollTop = output.scrollHeight;
+}
+
+// Pulisci console
+function clearConsole() {
+    document.getElementById('consoleOutput').innerHTML = 
+        '<div class="text-success">Console pulita - Pronto</div><br>';
+}
+
+// Escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Aggiorna informazioni sistema
+function refreshSystemInfo() {
+    fetch('{{ url_for("admin.system_info") }}')
+    .then(response => response.json())
+    .then(data => {
+        updateSystemInfo(data);
+    })
+    .catch(error => {
+        document.getElementById('systemInfo').innerHTML = 
+            '<div class="text-danger">Errore nel caricamento informazioni sistema</div>';
+    });
+}
+
+// Aggiorna display informazioni sistema
+function updateSystemInfo(data) {
+    const systemInfoHtml = `
+        <div class="row">
+            <div class="col-sm-6">
+                <strong>Sistema:</strong><br>
+                <span class="text-muted">${data.system || 'N/A'}</span>
+            </div>
+            <div class="col-sm-6">
+                <strong>Uptime:</strong><br>
+                <span class="text-muted">${data.uptime || 'N/A'}</span>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-sm-6">
+                <strong>CPU:</strong><br>
+                <span class="text-muted">${data.cpu_usage || 'N/A'}%</span>
+            </div>
+            <div class="col-sm-6">
+                <strong>Memoria:</strong><br>
+                <span class="text-muted">${data.memory_usage || 'N/A'}%</span>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-sm-6">
+                <strong>Disco:</strong><br>
+                <span class="text-muted">${data.disk_usage || 'N/A'}%</span>
+            </div>
+            <div class="col-sm-6">
+                <strong>Load Avg:</strong><br>
+                <span class="text-muted">${data.load_average || 'N/A'}</span>
+            </div>
+        </div>
+    `;
+    
+    const servicesInfoHtml = `
+        <div class="service-item d-flex justify-content-between align-items-center mb-2">
+            <span>Database</span>
+            <span class="badge bg-success">Attivo</span>
+        </div>
+        <div class="service-item d-flex justify-content-between align-items-center mb-2">
+            <span>Web Server</span>
+            <span class="badge bg-success">Attivo</span>
+        </div>
+        <div class="service-item d-flex justify-content-between align-items-center mb-2">
+            <span>AI Service</span>
+            <span class="badge bg-success">Attivo</span>
+        </div>
+        <div class="service-item d-flex justify-content-between align-items-center mb-2">
+            <span>VPN (Tailscale)</span>
+            <span class="badge ${data.vpn_status === 'running' ? 'bg-success' : 'bg-warning'}">${data.vpn_status || 'Sconosciuto'}</span>
+        </div>
+    `;
+    
+    document.getElementById('systemInfo').innerHTML = systemInfoHtml;
+    document.getElementById('servicesInfo').innerHTML = servicesInfoHtml;
+}
+
+// Aggiorna log
+function refreshLogs() {
+    // Simulazione log per ora
+    const appLogs = `
+        [${new Date().toLocaleString()}] INFO - Sistema avviato correttamente
+        [${new Date().toLocaleString()}] INFO - Database connesso
+        [${new Date().toLocaleString()}] INFO - AI Service caricato
+        [${new Date().toLocaleString()}] INFO - Server in ascolto su porta 5000
+    `;
+    
+    const systemLogs = `
+        [${new Date().toLocaleString()}] SYSTEM - Servizio web attivo
+        [${new Date().toLocaleString()}] SYSTEM - Memoria disponibile: 78%
+        [${new Date().toLocaleString()}] SYSTEM - CPU utilizzo: 15%
+        [${new Date().toLocaleString()}] SYSTEM - Connessioni attive: 3
+    `;
+    
+    document.getElementById('appLogs').innerHTML = '<pre>' + appLogs + '</pre>';
+    document.getElementById('systemLogs').innerHTML = '<pre>' + systemLogs + '</pre>';
+}
+</script>
+{% endblock %}

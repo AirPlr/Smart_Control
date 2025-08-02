@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Gestione Integrazioni</h2>
+    <div class="card p-4">
+        <form method="post">
+            <div class="mb-3">
+                <label class="form-label">Collega un servizio</label>
+                <select class="form-select" name="integration">
+                    <option value="whatsapp">WhatsApp Business (placeholder)</option>
+                    <option value="google">Google Calendar (placeholder)</option>
+                    <option value="altro">Altro (prossimamente)</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success">Collega</button>
+        </form>
+        <hr>
+        <h5>Integrazioni collegate</h5>
+        <ul class="list-group">
+            {% if user.integrations %}
+                {% for key, value in user.integrations.items() %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ key|capitalize }}
+                        <form method="post" action="{{ url_for('disconnect_integration', integration=key) }}" style="display:inline;">
+                            <button class="btn btn-danger btn-sm">Disconnetti</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <li class="list-group-item text-muted">Nessuna integrazione collegata.</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

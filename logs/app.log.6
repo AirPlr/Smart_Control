@@ -1,0 +1,107 @@
+2025-08-02 12:43:24,362 ERROR: Exception on /admin/users/create [GET] [in C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py:875]
+Traceback (most recent call last):
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\routes\admin.py", line 18, in decorated_function
+    return f(*args, **kwargs)
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\routes\admin.py", line 111, in create_user
+    return render_template('admin/create_user.html', consultants=consultants)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 1084, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 1013, in get_template
+    return self._load_template(name, globals)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 972, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: admin/create_user.html
+2025-08-02 12:43:56,929 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]
+2025-08-02 12:44:28,381 ERROR: Exception on /admin/users/create [POST] [in C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py:875]
+Traceback (most recent call last):
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\routes\admin.py", line 18, in decorated_function
+    return f(*args, **kwargs)
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\routes\admin.py", line 111, in create_user
+    return render_template('admin/create_user.html', consultants=consultants)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 1084, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 1013, in get_template
+    return self._load_template(name, globals)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 972, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: admin/create_user.html
+2025-08-02 13:05:28,884 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]
+2025-08-02 13:06:12,271 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]
+2025-08-02 13:06:20,593 ERROR: Exception on /admin/dashboard [GET] [in C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py:875]
+Traceback (most recent call last):
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\routes\admin.py", line 18, in decorated_function
+    flash('Accesso negato. Solo gli amministratori possono accedere a questa sezione.', 'error')
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\routes\admin.py", line 51, in dashboard
+    'total_appointments': Appointment.query.count(),
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 1304, in render
+    self.environment.handle_exception()
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\jinja2\environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\templates\admin\dashboard.html", line 1, in top-level template code
+    {% extends 'admin/base.html' %}
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\templates\admin\base.html", line 103, in top-level template code
+    {% block content %}{% endblock %}
+  File "C:\Users\Lorenzo\Desktop\Controllo\app_restructured\templates\admin\dashboard.html", line 114, in block 'content'
+    <a href="{{ url_for('admin.appointments') }}" class="btn btn-primary btn-block">
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\flask\app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+  File "C:\Users\Lorenzo\AppData\Local\Programs\Python\Python39\lib\site-packages\werkzeug\routing\map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'admin.appointments'. Did you mean 'api.api_appointments' instead?
+2025-08-02 13:06:54,360 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]
+2025-08-02 13:09:57,568 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]
+2025-08-02 13:10:14,249 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]
+2025-08-02 13:10:30,943 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]
+2025-08-02 13:11:43,202 INFO: AppointmentCRM startup [in C:\Users\Lorenzo\Desktop\Controllo\app_restructured\app.py:66]

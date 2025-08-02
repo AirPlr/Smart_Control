@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Errore del server{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="display-1 text-danger">500</h1>
+                    <h2 class="card-title">Errore interno del server</h2>
+                    <p class="card-text">Si è verificato un errore interno. Il team di sviluppo è già stato notificato.</p>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">Torna alla home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

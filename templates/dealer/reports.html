@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+
+{% block title %}Report - Dealer Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header mobile -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h4 mb-0">📊 Report Personali</h2>
+                <div class="text-muted small">{{ current_date }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-muted mb-3">Statistiche Generali</h5>
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="card text-center border-0 shadow-sm">
+                        <div class="card-body py-3">
+                            <div class="h4 text-primary mb-1">{{ stats.total_appointments }}</div>
+                            <small class="text-muted">Appuntamenti Totali</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card text-center border-0 shadow-sm">
+                        <div class="card-body py-3">
+                            <div class="h4 text-success mb-1">{{ stats.sold_appointments }}</div>
+                            <small class="text-muted">Vendite</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card text-center border-0 shadow-sm">
+                        <div class="card-body py-3">
+                            <div class="h4 text-info mb-1">{{ stats.conversion_rate }}%</div>
+                            <small class="text-muted">Tasso di Conversione</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche mensili -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-muted mb-3">Questo Mese</h5>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <div class="h6 text-primary">{{ stats.monthly.total }}</div>
+                            <small class="text-muted">Totali</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="h6 text-success">{{ stats.monthly.sold }}</div>
+                            <small class="text-muted">Vendite</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="h6 text-warning">{{ stats.monthly.assistenza }}</div>
+                            <small class="text-muted">Assistenza</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="h6 text-info">{{ stats.monthly.dimostrazione }}</div>
+                            <small class="text-muted">Demo</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche annuali -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-muted mb-3">Quest'Anno</h5>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <div class="h6 text-primary">{{ stats.yearly.total }}</div>
+                            <small class="text-muted">Totali</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="h6 text-success">{{ stats.yearly.sold }}</div>
+                            <small class="text-muted">Vendite</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="h6 text-warning">{{ stats.yearly.assistenza }}</div>
+                            <small class="text-muted">Assistenza</small>
+                        </div>
+                        <div class="col-3">
+                            <div class="h6 text-info">{{ stats.yearly.dimostrazione }}</div>
+                            <small class="text-muted">Demo</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generatore report -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="text-muted mb-3">Genera Report Personalizzato</h5>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form id="reportForm">
+                        <div class="mb-3">
+                            <label for="reportType" class="form-label">Tipo di Report</label>
+                            <select class="form-select" id="reportType" name="report_type" required>
+                                <option value="">Seleziona tipo</option>
+                                <option value="performance">Report Performance</option>
+                                <option value="activity">Report Attività Dettagliato</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="period" class="form-label">Periodo</label>
+                            <select class="form-select" id="period" name="period" required>
+                                <option value="week">Ultima settimana</option>
+                                <option value="month" selected>Questo mese</option>
+                                <option value="quarter">Questo trimestre</option>
+                                <option value="year">Quest'anno</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-chart-bar me-2"></i>Genera Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area risultati report -->
+    <div id="reportResults" class="row" style="display: none;">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Risultati Report</h6>
+                </div>
+                <div class="card-body" id="reportContent">
+                    <!-- Contenuto generato dinamicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigazione bottom -->
+    <div class="fixed-bottom bg-white border-top p-2">
+        <div class="row text-center">
+            <div class="col-3">
+                <a href="{{ url_for('dealer.dashboard') }}" class="btn btn-link p-2 text-decoration-none">
+                    <i class="fas fa-home d-block"></i>
+                    <small>Dashboard</small>
+                </a>
+            </div>
+            <div class="col-3">
+                <a href="{{ url_for('dealer.appointments') }}" class="btn btn-link p-2 text-decoration-none">
+                    <i class="fas fa-calendar d-block"></i>
+                    <small>Appuntamenti</small>
+                </a>
+            </div>
+            <div class="col-3">
+                <a href="{{ url_for('dealer.reports') }}" class="btn btn-primary p-2 text-decoration-none">
+                    <i class="fas fa-chart-bar d-block text-white"></i>
+                    <small class="text-white">Report</small>
+                </a>
+            </div>
+            <div class="col-3">
+                <a href="{{ url_for('dealer.profile') }}" class="btn btn-link p-2 text-decoration-none">
+                    <i class="fas fa-user d-block"></i>
+                    <small>Profilo</small>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Padding bottom per navigazione fissa -->
+    <div style="height: 100px;"></div>
+</div>
+
+<!-- Modal per visualizzazione report -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportModalLabel">Dettagli Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalReportContent">
+                <!-- Contenuto report nel modal -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                <button type="button" class="btn btn-primary" onclick="printReport()">
+                    <i class="fas fa-print me-2"></i>Stampa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reportForm = document.getElementById('reportForm');
+    const reportResults = document.getElementById('reportResults');
+    const reportContent = document.getElementById('reportContent');
+    const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+
+    reportForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(reportForm);
+        const submitBtn = reportForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Disabilita pulsante e mostra loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generando...';
+        
+        fetch("{{ url_for('dealer.generate_report') }}", {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayReport(data.data, formData.get('report_type'));
+                reportResults.style.display = 'block';
+                
+                // Scroll ai risultati
+                reportResults.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert('Errore nella generazione del report: ' + (data.error || 'Errore sconosciuto'));
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Errore di connessione');
+        })
+        .finally(() => {
+            // Ripristina pulsante
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+
+    function displayReport(data, reportType) {
+        let html = '';
+        
+        if (reportType === 'performance') {
+            html = `
+                <div class="text-center mb-3">
+                    <h6 class="text-primary">${data.period}</h6>
+                    <p class="text-muted">Report Performance - ${data.consultant_name}</p>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="card bg-light text-center">
+                            <div class="card-body py-2">
+                                <div class="h5 text-primary">${data.total_appointments}</div>
+                                <small>Appuntamenti</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-light text-center">
+                            <div class="card-body py-2">
+                                <div class="h5 text-success">${data.sold_appointments}</div>
+                                <small>Vendite</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card bg-light text-center">
+                            <div class="card-body py-2">
+                                <div class="h5 text-info">${data.conversion_rate}%</div>
+                                <small>Tasso di Conversione</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-3">
+                
+                <div class="row g-2">
+                    <div class="col-6">
+                        <h6 class="text-warning">Assistenza</h6>
+                        <p class="mb-1">Totali: <strong>${data.by_type.assistenza.total}</strong></p>
+                        <p>Vendite: <strong>${data.by_type.assistenza.sold}</strong></p>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-info">Dimostrazioni</h6>
+                        <p class="mb-1">Totali: <strong>${data.by_type.dimostrazione.total}</strong></p>
+                        <p>Vendite: <strong>${data.by_type.dimostrazione.sold}</strong></p>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-secondary">Nominativi</h6>
+                        <p>Raccolti: <strong>${data.nominativi_raccolti}</strong></p>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-secondary">App. Personali</h6>
+                        <p>Fissati: <strong>${data.appuntamenti_personali}</strong></p>
+                    </div>
+                </div>
+                
+                <div class="d-grid mt-3">
+                    <button class="btn btn-outline-primary" onclick="showReportModal('${reportType}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-expand-alt me-2"></i>Visualizza Dettagliato
+                    </button>
+                </div>
+            `;
+        } else if (reportType === 'activity') {
+            html = `
+                <div class="text-center mb-3">
+                    <h6 class="text-primary">${data.period}</h6>
+                    <p class="text-muted">Report Attività - ${data.consultant_name}</p>
+                </div>
+                
+                <p class="text-center"><strong>${data.appointments.length}</strong> appuntamenti nel periodo</p>
+                
+                <div class="list-group list-group-flush">
+            `;
+            
+            data.appointments.forEach((app, index) => {
+                if (index < 5) { // Mostra solo i primi 5
+                    html += `
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">${app.nome_cliente}</h6>
+                                    <p class="mb-1 text-muted small">${app.data_appuntamento}</p>
+                                    <small class="text-muted">${app.tipologia} - ${app.stato}</small>
+                                </div>
+                                <span class="badge ${app.venduto === 'Sì' ? 'bg-success' : 'bg-secondary'}">${app.venduto}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += `
+                </div>
+                
+                <div class="d-grid mt-3">
+                    <button class="btn btn-outline-primary" onclick="showReportModal('${reportType}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-list me-2"></i>Visualizza Tutti (${data.appointments.length})
+                    </button>
+                </div>
+            `;
+        }
+        
+        reportContent.innerHTML = html;
+    }
+
+    // Funzione globale per il modal
+    window.showReportModal = function(reportType, data) {
+        const modalContent = document.getElementById('modalReportContent');
+        let html = '';
+        
+        if (reportType === 'performance') {
+            html = `
+                <div class="text-center mb-4">
+                    <h5 class="text-primary">${data.period}</h5>
+                    <p class="text-muted">Report Performance Completo - ${data.consultant_name}</p>
+                </div>
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-4">
+                        <div class="card bg-primary text-white text-center">
+                            <div class="card-body">
+                                <div class="h4">${data.total_appointments}</div>
+                                <small>Appuntamenti Totali</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card bg-success text-white text-center">
+                            <div class="card-body">
+                                <div class="h4">${data.sold_appointments}</div>
+                                <small>Vendite</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card bg-info text-white text-center">
+                            <div class="card-body">
+                                <div class="h4">${data.conversion_rate}%</div>
+                                <small>Conversione</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-warning text-white">
+                                <h6 class="mb-0">Assistenza</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>Appuntamenti: <strong>${data.by_type.assistenza.total}</strong></p>
+                                <p>Vendite: <strong>${data.by_type.assistenza.sold}</strong></p>
+                                <p>Conversione: <strong>${data.by_type.assistenza.total > 0 ? Math.round(data.by_type.assistenza.sold / data.by_type.assistenza.total * 100) : 0}%</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">Dimostrazioni</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>Appuntamenti: <strong>${data.by_type.dimostrazione.total}</strong></p>
+                                <p>Vendite: <strong>${data.by_type.dimostrazione.sold}</strong></p>
+                                <p>Conversione: <strong>${data.by_type.dimostrazione.total > 0 ? Math.round(data.by_type.dimostrazione.sold / data.by_type.dimostrazione.total * 100) : 0}%</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0">Nominativi Raccolti</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="h3 text-secondary">${data.nominativi_raccolti}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="mb-0">Appuntamenti Personali</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="h3 text-secondary">${data.appuntamenti_personali}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (reportType === 'activity') {
+            html = `
+                <div class="text-center mb-4">
+                    <h5 class="text-primary">${data.period}</h5>
+                    <p class="text-muted">Report Attività Completo - ${data.consultant_name}</p>
+                    <p><strong>${data.appointments.length}</strong> appuntamenti nel periodo</p>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Stato</th>
+                                <th>Venduto</th>
+                                <th>Nom.</th>
+                                <th>App.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.appointments.forEach(app => {
+                html += `
+                    <tr>
+                        <td><strong>${app.nome_cliente}</strong></td>
+                        <td><small>${app.data_appuntamento}</small></td>
+                        <td><span class="badge ${app.tipologia === 'Assistenza' ? 'bg-warning' : 'bg-info'}">${app.tipologia}</span></td>
+                        <td><small>${app.stato}</small></td>
+                        <td><span class="badge ${app.venduto === 'Sì' ? 'bg-success' : 'bg-secondary'}">${app.venduto}</span></td>
+                        <td class="text-center">${app.nominativi_raccolti}</td>
+                        <td class="text-center">${app.appuntamenti_personali}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        modalContent.innerHTML = html;
+        reportModal.show();
+    };
+
+    // Funzione globale per stampa
+    window.printReport = function() {
+        const modalContent = document.getElementById('modalReportContent').innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Report</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                    <style>
+                        @media print {
+                            .no-print { display: none !important; }
+                            body { font-size: 12px; }
+                        }
+                    </style>
+                </head>
+                <body class="p-3">
+                    ${modalContent}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    };
+});
+</script>
+{% endblock %}

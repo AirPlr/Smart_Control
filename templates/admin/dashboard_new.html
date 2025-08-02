@@ -1,0 +1,417 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Dashboard Amministratore{% endblock %}
+
+{% block styles %}
+<style>
+.dashboard-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+    border: none;
+    transition: transform 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+}
+
+.dashboard-card .metric-value {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-card .metric-label {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.quick-action-card {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.action-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+}
+
+.welcome-card {
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+    border-radius: 20px;
+    color: #333;
+    border: none;
+}
+
+.recent-activity {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    padding: 0.75rem;
+    border-left: 3px solid #007bff;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 0 8px 8px 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Header -->
+    <div class="card welcome-card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="h2 mb-2">👋 Benvenuto, {{ current_user.username }}!</h1>
+                    <p class="lead mb-0">Gestisci il tuo sistema di appuntamenti da questa dashboard centrale.</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        <script>document.write(new Date().toLocaleDateString('it-IT'));</script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metriche Principali -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="metric-value">{{ data.total_appointments or 0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-calendar me-2"></i>Appuntamenti
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="metric-value">{{ data.total_consultants or 0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-user-tie me-2"></i>Consulenti
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="metric-value">{{ data.total_users or 0 }}</div>
+                <div class="metric-label">
+                    <i class="fas fa-users me-2"></i>Utenti
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <div class="metric-value">
+                    {% set conversion = ((data.sold_appointments or 0) / (data.total_appointments or 1) * 100) %}
+                    {{ "%.1f"|format(conversion) }}%
+                </div>
+                <div class="metric-label">
+                    <i class="fas fa-chart-line me-2"></i>Conversione
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Azioni Rapide -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-bolt me-2"></i>Azioni Rapide</h4>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="card quick-action-card">
+                <div class="card-body text-center">
+                    <div class="action-icon text-primary">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h5>Nuovo Utente</h5>
+                    <p class="text-muted small">Crea un nuovo utente/consulente</p>
+                    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crea
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card quick-action-card">
+                <div class="card-body text-center">
+                    <div class="action-icon text-success">
+                        <i class="fas fa-calendar-plus"></i>
+                    </div>
+                    <h5>Nuovo Appuntamento</h5>
+                    <p class="text-muted small">Aggiungi un appuntamento</p>
+                    <a href="{{ url_for('main.add_appointment') }}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Aggiungi
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card quick-action-card">
+                <div class="card-body text-center">
+                    <div class="action-icon text-info">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h5>Impostazioni</h5>
+                    <p class="text-muted small">Gestisci sistema e configurazioni</p>
+                    <a href="{{ url_for('admin.settings') }}" class="btn btn-info">
+                        <i class="fas fa-cogs me-2"></i>Apri
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card quick-action-card">
+                <div class="card-body text-center">
+                    <div class="action-icon text-warning">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h5>Report</h5>
+                    <p class="text-muted small">Visualizza statistiche e report</p>
+                    <button class="btn btn-warning" onclick="generateQuickReport()">
+                        <i class="fas fa-chart-line me-2"></i>Genera
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione principale con appuntamenti recenti e AI Assistant -->
+    <div class="row">
+        <!-- Appuntamenti Recenti -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Appuntamenti Recenti
+                        <span class="badge bg-primary ms-2">{{ (data.recent_appointments or [])|length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if data.recent_appointments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Consulente</th>
+                                        <th>Data</th>
+                                        <th>Tipo</th>
+                                        <th>Stato</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for appointment in data.recent_appointments[:10] %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ appointment.nome_cliente }}</strong>
+                                            {% if appointment.telefono %}
+                                                <br><small class="text-muted">{{ appointment.telefono }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ appointment.consulente.nome if appointment.consulente else 'N/A' }}</td>
+                                        <td>
+                                            <small>{{ appointment.data_appuntamento.strftime('%d/%m/%Y') }}</small>
+                                            <br><small class="text-muted">{{ appointment.data_appuntamento.strftime('%H:%M') }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ 'bg-info' if appointment.tipologia == 'Dimostrazione' else 'bg-warning' }}">
+                                                {{ appointment.tipologia }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if appointment.venduto %}
+                                                <span class="badge bg-success">Venduto</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ appointment.stato or 'In Attesa' }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="card-footer text-center">
+                            <a href="{{ url_for('main.appointments') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-list me-2"></i>Vedi Tutti gli Appuntamenti
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nessun appuntamento recente</h5>
+                            <a href="{{ url_for('main.add_appointment') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Aggiungi il primo appuntamento
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Assistant -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>AI Assistant
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="ai-widget-container">
+                        <p class="text-muted mb-3">Il tuo assistente AI è pronto ad aiutarti!</p>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="askAI('Analizza i dati degli appuntamenti di oggi')">
+                                <i class="fas fa-chart-line me-2"></i>Analisi Giornaliera
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="askAI('Mostrami le performance dei consulenti')">
+                                <i class="fas fa-users me-2"></i>Performance Consulenti
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="askAI('Suggerimenti per migliorare le vendite')">
+                                <i class="fas fa-lightbulb me-2"></i>Suggerimenti
+                            </button>
+                            <button class="btn btn-warning" onclick="openAIChat()">
+                                <i class="fas fa-comments me-2"></i>Chat Completa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collegamenti Rapidi -->
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-link me-2"></i>Collegamenti Rapidi
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-users me-2 text-primary"></i>Gestione Utenti
+                        </a>
+                        <a href="{{ url_for('main.consultants') }}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-user-tie me-2 text-success"></i>Consulenti
+                        </a>
+                        <a href="{{ url_for('main.appointments') }}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-calendar me-2 text-info"></i>Tutti gli Appuntamenti
+                        </a>
+                        <a href="{{ url_for('admin.settings') }}" class="list-group-item list-group-item-action border-0">
+                            <i class="fas fa-cogs me-2 text-warning"></i>Impostazioni Sistema
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Dashboard -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Dashboard semplificata - Usa <strong>Impostazioni</strong> per configurazioni avanzate del sistema
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Funzioni AI Assistant
+function askAI(message) {
+    if (window.aiAssistant) {
+        window.aiAssistant.sendTextMessage(message);
+        window.aiAssistant.show();
+    } else {
+        alert('AI Assistant non disponibile. Controlla le impostazioni.');
+    }
+}
+
+function openAIChat() {
+    if (window.aiAssistant) {
+        window.aiAssistant.show();
+    } else {
+        alert('AI Assistant non disponibile. Controlla le impostazioni.');
+    }
+}
+
+function generateQuickReport() {
+    // Apri modal per selezione rapida report
+    const reportType = prompt('Che tipo di report vuoi generare?\n1 - Performance Generale\n2 - Report Consulenti\n3 - Statistiche Mensili', '1');
+    
+    if (reportType) {
+        let url = '';
+        switch(reportType) {
+            case '1':
+                askAI('Genera un report delle performance generali del sistema');
+                break;
+            case '2':
+                askAI('Mostrami un report dettagliato di tutti i consulenti');
+                break;
+            case '3':
+                askAI('Genera statistiche complete per questo mese');
+                break;
+            default:
+                alert('Opzione non valida');
+        }
+    }
+}
+
+// Auto-refresh delle metriche ogni 5 minuti
+setInterval(function() {
+    // Ricarica solo le metriche principali via AJAX se necessario
+    console.log('Auto-refresh dashboard metrics...');
+}, 300000);
+
+// Animazioni al caricamento
+document.addEventListener('DOMContentLoaded', function() {
+    // Animazione contatori
+    const counters = document.querySelectorAll('.metric-value');
+    counters.forEach(counter => {
+        const target = parseInt(counter.textContent);
+        let current = 0;
+        const increment = target / 50;
+        
+        const updateCounter = () => {
+            if (current < target) {
+                current += increment;
+                counter.textContent = Math.floor(current);
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target;
+            }
+        };
+        
+        updateCounter();
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,326 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Report - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-chart-bar me-2"></i>Generazione Report
+        </h1>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Form generazione report -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cogs me-2"></i>Configurazione Report
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form id="reportForm">
+                        <div class="mb-3">
+                            <label for="report_type" class="form-label">Tipo di Report</label>
+                            <select class="form-select" id="report_type" name="report_type" required>
+                                <option value="">Seleziona tipo report</option>
+                                <option value="appointments">Report Appuntamenti</option>
+                                <option value="performance">Report Performance Consulenti</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">Data Inizio</label>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">Data Fine</label>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-chart-line me-2"></i>Genera Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle me-2"></i>Tipi di Report Disponibili
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-primary">
+                            <i class="fas fa-calendar-alt me-2"></i>Report Appuntamenti
+                        </h6>
+                        <p class="text-muted small">
+                            Statistiche dettagliate sugli appuntamenti in un periodo specifico: 
+                            totale appuntamenti, vendite concluse, appuntamenti in sospeso, 
+                            e dettagli per ogni appuntamento.
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="text-success">
+                            <i class="fas fa-users me-2"></i>Report Performance Consulenti
+                        </h6>
+                        <p class="text-muted small">
+                            Analisi delle performance dei consulenti: numero di appuntamenti gestiti, 
+                            vendite concluse, tasso di conversione e confronto tra consulenti.
+                        </p>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Suggerimento:</strong> I report possono essere generati per qualsiasi 
+                        periodo di tempo. Per analisi mensili o trimestrali, seleziona il periodo appropriato.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area risultati report -->
+    <div id="reportResults" class="card shadow mb-4" style="display: none;">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-success">
+                <i class="fas fa-chart-pie me-2"></i>Risultati Report
+            </h6>
+        </div>
+        <div class="card-body">
+            <div id="reportContent">
+                <!-- Contenuto del report verrà inserito qui via JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Generazione Report in corso...</h5>
+                <p class="text-muted">Attendere mentre elaboriamo i dati</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reportForm = document.getElementById('reportForm');
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    
+    // Imposta date di default (ultimo mese)
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    
+    document.getElementById('end_date').value = today.toISOString().split('T')[0];
+    document.getElementById('start_date').value = lastMonth.toISOString().split('T')[0];
+    
+    reportForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(reportForm);
+        
+        // Mostra loading
+        loadingModal.show();
+        
+        fetch('{{ url_for("admin.generate_report") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingModal.hide();
+            
+            if (data.success) {
+                displayReport(data.data);
+            } else {
+                alert('Errore nella generazione del report: ' + data.error);
+            }
+        })
+        .catch(error => {
+            loadingModal.hide();
+            console.error('Error:', error);
+            alert('Errore nella generazione del report');
+        });
+    });
+    
+    function displayReport(data) {
+        const resultsDiv = document.getElementById('reportResults');
+        const contentDiv = document.getElementById('reportContent');
+        
+        let html = '';
+        
+        if (data.appointments) {
+            // Report appuntamenti
+            html = `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="text-primary">Report Appuntamenti</h5>
+                        <p class="text-muted">Periodo: ${data.period}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h3 class="text-primary">${data.total_appointments}</h3>
+                                <p class="mb-0">Totale Appuntamenti</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <h3 class="text-success">${data.sold_appointments}</h3>
+                                <p class="mb-0">Vendite Concluse</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-info">
+                            <div class="card-body text-center">
+                                <h3 class="text-info">${data.concluded_appointments}</h3>
+                                <p class="mb-0">Appuntamenti Conclusi</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <h3 class="text-warning">${data.pending_callbacks}</h3>
+                                <p class="mb-0">Da Richiamare</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Data</th>
+                                <th>Stato</th>
+                                <th>Venduto</th>
+                                <th>Consulenti</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.appointments.forEach(app => {
+                html += `
+                    <tr>
+                        <td>${app.nome_cliente}</td>
+                        <td>${app.data_appuntamento}</td>
+                        <td><span class="badge ${app.stato === 'concluso' ? 'bg-success' : app.stato === 'da richiamare' ? 'bg-warning' : 'bg-danger'}">${app.stato}</span></td>
+                        <td>${app.venduto === 'Sì' ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'} ${app.venduto}</td>
+                        <td>${app.consultants}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            
+        } else if (data.consultant_stats) {
+            // Report performance
+            html = `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="text-primary">Report Performance Consulenti</h5>
+                        <p class="text-muted">Periodo: ${data.period}</p>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Consulente</th>
+                                <th>Totale Appuntamenti</th>
+                                <th>Vendite Concluse</th>
+                                <th>Tasso di Conversione</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.consultant_stats.forEach(consultant => {
+                const progressColor = consultant.conversion_rate >= 50 ? 'success' : consultant.conversion_rate >= 25 ? 'warning' : 'danger';
+                html += `
+                    <tr>
+                        <td><strong>${consultant.nome}</strong></td>
+                        <td>${consultant.total_appointments}</td>
+                        <td>${consultant.sold_appointments}</td>
+                        <td>${consultant.conversion_rate}%</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-${progressColor}" role="progressbar" 
+                                     style="width: ${consultant.conversion_rate}%" 
+                                     aria-valuenow="${consultant.conversion_rate}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    ${consultant.conversion_rate}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+        }
+        
+        // Aggiungi pulsante di esportazione
+        html += `
+            <div class="text-center mt-4">
+                <button class="btn btn-success" onclick="exportReport()">
+                    <i class="fas fa-download me-2"></i>Esporta Report
+                </button>
+            </div>
+        `;
+        
+        contentDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+        
+        // Scroll verso i risultati
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Funzione di esportazione (placeholder)
+    window.exportReport = function() {
+        alert('Funzione di esportazione non ancora implementata');
+    };
+});
+</script>
+{% endblock %}

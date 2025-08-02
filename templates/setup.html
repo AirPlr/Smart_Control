@@ -1,60 +1,36 @@
-{% extends "base.html" %}
-{% block head %}
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            text-align: center;
-            width: 300px;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        form label,
-        form input,
-        form textarea,
-        form button {
-            margin-bottom: 10px;
-        }
-    </style>
-{% endblock %}
+{% extends 'base.html' %}
 {% block content %}
-<div class="container">
-    <h1>{{ _('User Setup') }}</h1>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
+<div class="container mt-5" style="max-width: 500px;">
+    <h1 class="text-center mb-4">User Setup</h1>
     <form action="{{ url_for('setup') }}" method="POST">
-        <label for="username">{{ _('Username:') }}</label>
-        <input type="text" id="username" name="username" required>
-        <label for="email">{{ _('Email:') }}</label>
-        <input type="email" id="email" name="email" required>
-        <label for="language">{{ _('Language') }}</label>
-        <select id="language" name="language" class="form-select" required>
-            <option value="it">{{ _('Italian') }}</option>
-            <option value="en">{{ _('English') }}</option>
-        </select>
-        <label for="license_code">{{ _('Codice Licenza:') }}</label>
-        <input type="text" id="license_code" name="license_code" required>
-        <label for="company_name">{{ _('Nome Azienda:') }}</label>
-        <input type="text" id="company_name" name="company_name">
-        <label for="company_address">{{ _('Indirizzo Azienda:') }}</label>
-        <textarea id="company_address" name="company_address"></textarea>
-        <button type="submit">{{ _('Salva') }}</button>
+        <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" id="username" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="language" class="form-label">Lingua</label>
+            <select id="language" name="language" class="form-select" required>
+                <option value="it">Italiano</option>
+                <option value="en">Inglese</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="license_code" class="form-label">Codice Licenza</label>
+            <input type="text" id="license_code" name="license_code" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="company_name" class="form-label">Nome Azienda</label>
+            <input type="text" id="company_name" name="company_name" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label for="company_address" class="form-label">Indirizzo Azienda</label>
+            <textarea id="company_address" name="company_address" class="form-control"></textarea>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Salva</button>
     </form>
 </div>
 {% endblock %}

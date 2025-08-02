@@ -78,20 +78,19 @@
     </div>
 </div>
 
-<!-- Note Edit Modal -->
+<!-- Modal modifica note -->
 <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="noteModalLabel">Modifica Note</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h5 class="modal-title" id="noteModalLabel">Modifica Note Cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
       </div>
       <div class="modal-body">
-        <textarea id="noteTextarea" class="form-control" rows="5"></textarea>
+        <textarea class="form-control" id="noteInput" rows="4"></textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-        <button type="button" class="btn btn-info" id="printNoteBtn">Stampa Note</button>
         <button type="button" class="btn btn-primary" id="saveNoteBtn">Salva</button>
       </div>
     </div>
@@ -235,41 +234,20 @@
             e.stopPropagation();
             var clientId = $(this).data('id');
             var noteText = $(this).text() === 'N/D' ? '' : $(this).text();
-            $('#noteTextarea').val(noteText);
+            $('#noteInput').val(noteText);
             $('#noteModal').data('clientId', clientId).modal('show');
         });
 
         // Save note changes
         $('#saveNoteBtn').on('click', function(){
             var clientId = $('#noteModal').data('clientId');
-            var newNote = $('#noteTextarea').val();
+            var newNote = $('#noteInput').val();
             $.post('/update_client_note', { id: clientId, note: newNote }, function(resp){
                 if(resp.success){
                     $('button.note-edit-btn[data-id="'+clientId+'"]').text(newNote || 'N/D');
                     $('#noteModal').modal('hide');
                 }
             });
-        });
-
-        // Print note content
-        $('#printNoteBtn').on('click', function(){
-            var noteContent = $('#noteTextarea').val();
-            var printWindow = window.open('', '', 'height=400,width=600');
-            var clientId = $('#noteModal').data('clientId');
-            var clientItem = $('.client-item[data-id="' + clientId + '"]');
-            var clientName = clientItem.data('name');
-            var clientAddress = clientItem.data('address') || clientItem.find("strong:contains('Indirizzo:')").parent().text().replace('Indirizzo: ', '').split('|')[0].trim();
-
-            printWindow.document.write(
-                '<!doctype html><html><head><title>Nota</title></head><body>' +
-                    '<h4>' + clientName + '</h4>' +
-                    '<p><strong>Indirizzo:</strong> ' + clientAddress + '</p>' +
-                    '<pre>' + noteContent + '</pre>' +
-                '</body></html>'
-            );
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
         });
     });
 </script>

@@ -1,21 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create Note Event</title>
-</head>
-<body>
-    <h1>Create Note Event for a Given Date</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div>
-            <label for="date">Event Date:</label>
-            <input type="date" id="date" name="date" required>
-        </div>
-        <div>
-            <label for="note">Note:</label>
-            <textarea id="note" name="note" rows="4" cols="50"></textarea>
-        </div>
-        <button type="submit">Create Event</button>
-    </form>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4 text-primary">Crea Evento/Nota</h1>
+    <div class="card shadow p-4">
+        <form method="post" action="{{ url_for('main.add_event') }}">
+            <div class="mb-3">
+                <label for="data" class="form-label">Data Evento</label>
+                <input type="date" id="data" name="data" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="note" class="form-label">Note</label>
+                <textarea id="note" name="note" class="form-control" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Crea Evento</button>
+        </form>
+    </div>
+    <div class="text-center mt-4">
+        <a href="{{ url_for('main.calendar') }}" class="btn btn-secondary">Torna al Calendario</a>
+    </div>
+</div>
+{% endblock %}

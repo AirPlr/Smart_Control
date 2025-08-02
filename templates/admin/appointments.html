@@ -1,0 +1,263 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Gestione Appuntamenti - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-calendar-alt me-2"></i>Gestione Appuntamenti
+        </h1>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiche rapide -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Totale Appuntamenti
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Conclusi
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.conclusi }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Da Richiamare
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.da_richiamare }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-phone fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Venduti
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.venduti }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtri -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-filter me-2"></i>Filtri
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row">
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Stato</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">Tutti gli stati</option>
+                        <option value="concluso" {{ 'selected' if request.args.get('status') == 'concluso' }}>Concluso</option>
+                        <option value="da richiamare" {{ 'selected' if request.args.get('status') == 'da richiamare' }}>Da Richiamare</option>
+                        <option value="non richiamare" {{ 'selected' if request.args.get('status') == 'non richiamare' }}>Non Richiamare</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date" class="form-label">Data</label>
+                    <input type="date" name="date" id="date" class="form-control" value="{{ request.args.get('date', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="consultant" class="form-label">Consulente</label>
+                    <select name="consultant" id="consultant" class="form-select">
+                        <option value="">Tutti i consulenti</option>
+                        {% for consultant in consultants %}
+                        <option value="{{ consultant.id }}" {{ 'selected' if request.args.get('consultant')|int == consultant.id }}>
+                            {{ consultant.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-1"></i>Filtra
+                    </button>
+                    <a href="{{ url_for('admin.appointments') }}" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i>Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabella appuntamenti -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i>Lista Appuntamenti
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if appointments.items %}
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Data Appuntamento</th>
+                            <th>Consulenti</th>
+                            <th>Tipologia</th>
+                            <th>Stato</th>
+                            <th>Venduto</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in appointments.items %}
+                        <tr>
+                            <td>
+                                <strong>{{ appointment.nome_cliente }}</strong><br>
+                                <small class="text-muted">{{ appointment.numero_telefono }}</small>
+                            </td>
+                            <td>{{ appointment.data_appuntamento.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if appointment.consultants %}
+                                    {% for consultant in appointment.consultants %}
+                                        <span class="badge bg-info me-1">{{ consultant.nome }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">Nessuno</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge {% if appointment.tipologia == 'Dimostrazione' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                    {{ appointment.tipologia }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if appointment.stato == 'concluso' %}bg-success
+                                    {% elif appointment.stato == 'da richiamare' %}bg-warning
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ appointment.stato.title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if appointment.venduto %}
+                                    <i class="fas fa-check-circle text-success"></i> Sì
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger"></i> No
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.appointment_detail', appointment_id=appointment.id) }}" 
+                                   class="btn btn-sm btn-info" title="Dettagli">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginazione -->
+            {% if appointments.pages > 1 %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Paginazione appuntamenti">
+                    <ul class="pagination">
+                        {% if appointments.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.appointments', page=appointments.prev_num, **request.args) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in appointments.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != appointments.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.appointments', page=page_num, **request.args) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if appointments.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.appointments', page=appointments.next_num, **request.args) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                <p>Nessun appuntamento trovato con i filtri selezionati.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

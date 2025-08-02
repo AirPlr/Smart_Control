@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 {% block head %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 {% endblock %}
@@ -17,7 +17,6 @@
         </div>
     </form>
 </div>
-
 <div class="container mt-4">
     <h2 class="text-primary" id="consultantName">
         {% for consultant in consultants %}
@@ -28,7 +27,6 @@
     </h2>
     <form id="confirmForm" method="POST" action="{{ url_for('edit_payments') }}">
         <input type="hidden" name="consultant_id" value="{{ consultant_id }}">
-
         <table class="table table-striped">
             <thead>
                 <tr>

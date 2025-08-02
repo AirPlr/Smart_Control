@@ -145,6 +145,24 @@
     
     
 </div>
+<!-- Modal conferma azione -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmModalLabel">Conferma azione</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body">
+        Sei sicuro di voler procedere?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Conferma</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 {% block floating_button %}
 <a href="{{ url_for('generate_report') }}" class="btn btn-warning floating-btn" style="border-radius: 0.5rem;">

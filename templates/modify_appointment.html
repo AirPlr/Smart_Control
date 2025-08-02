@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-
+{% extends 'base.html' %}
+{% block content %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +13,7 @@
 <body>
     <div class="container mt-4">
         <h2>Modifica Appuntamento</h2>
-    <form action="{{ url_for('modify_appointments', id=appointment.id) }}" method="POST">
+    <form action="{{ url_for('main.modify_appointment', id=appointment.id) }}" method="POST">
         <div class="mb-3">
             <label class="form-label">Nome Cliente</label>
             <input list="client-list" class="form-control" name="nome_cliente" id="nome_cliente" required oninput="checkClient(this)">
@@ -140,10 +141,11 @@
             <label class="form-label">Data Appuntamento</label>
             <input type="date" class="form-control" name="data_appuntamento" required>
         </div>
-        <button type="submit" class="btn btn-success w-100">Salva Appuntamento</button>
-        
+        <button type="submit" class="btn btn-success w-100">Salva Modifiche</button>
     </form>
-     <a href="{{ url_for('index') }}" class="btn btn-secondary">Torna alla Home</a>
+    <div class="text-center mt-4">
+        <a href="{{ url_for('main.appointments') }}" class="btn btn-secondary">Torna alla Lista Appuntamenti</a>
+    </div>
 </div>
     
    
@@ -186,3 +188,4 @@ document.addEventListener("DOMContentLoaded", function() {
     
 </body>
 </html>
+{% endblock %}

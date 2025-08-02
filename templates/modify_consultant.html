@@ -1,62 +1,52 @@
 <!-- filepath: /c:/Users/Lorenzo/Desktop/Controllo/templates/modify_consultant.html -->
-<!doctype html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Modifica Consulente</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h1 class="text-center mb-4 text-primary">Modifica Consulente</h1>
-        <div class="card shadow p-4">
-            <form method="POST">
-                <div class="mb-3">
-                    <label class="form-label">Nome</label>
-                    <input type="text" class="form-control" name="nome" value="{{ consultant.nome }}" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Posizione</label>
-                    <select class="form-select" name="posizione_id">
-                        {% for pos in positions %}
-                        <option value="{{ pos.id }}" {% if consultant.posizione_id == pos.id %}selected{% endif %}>{{ pos.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Responsabile</label>
-                    <select class="form-select" name="responsabile_id">
-                        <option value="">Nessuno</option>
-                        {% for c in consultant.query.all() %}
-                        <option value="{{ c.id }}" {% if c.id == consultant.responsabile_id %}selected{% endif %}>{{ c.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Residenza</label>
-                    <input type="text" class="form-control" name="residency" value="{{ consultant.residency }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Telefono</label>
-                    <input type="text" class="form-control" name="phone" value="{{ consultant.phone }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" name="email" value="{{ consultant.email }}">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Codice Fiscale</label>
-                    <input type="text" class="form-control" name="CF" value="{{ consultant.CF }}">
-                </div>
-                <button type="submit" class="btn btn-success w-100">Salva Modifiche</button>
-            </form>
-        </div>
-        <div class="text-center mt-4">
-            <a href="{{ url_for('consultants') }}" class="btn btn-secondary">Torna alla Lista Consulenti</a>
-        </div>
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4 text-primary">Modifica Consulente</h1>
+    <div class="card shadow p-4">
+            <form action="{{ url_for('main.modify_consultant', id=consultant.id) }}" method="POST">
+            <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input type="text" class="form-control" name="nome" value="{{ consultant.nome }}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Posizione</label>
+                <select class="form-select" name="posizione_id">
+                    {% for pos in positions %}
+                    <option value="{{ pos.id }}" {% if consultant.posizione_id == pos.id %}selected{% endif %}>{{ pos.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Responsabile</label>
+                <select class="form-select" name="responsabile_id">
+                    <option value="">Nessuno</option>
+                    {% for c in consultant.query.all() %}
+                    <option value="{{ c.id }}" {% if c.id == consultant.responsabile_id %}selected{% endif %}>{{ c.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Residenza</label>
+                <input type="text" class="form-control" name="residency" value="{{ consultant.residency }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Telefono</label>
+                <input type="text" class="form-control" name="phone" value="{{ consultant.phone }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" name="email" value="{{ consultant.email }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Codice Fiscale</label>
+                <input type="text" class="form-control" name="CF" value="{{ consultant.CF }}">
+            </div>
+            <button type="submit" class="btn btn-success w-100">Salva Modifiche</button>
+        </form>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <div class="text-center mt-4">
+        <a href="{{ url_for('consultants') }}" class="btn btn-secondary">Torna alla Lista Consulenti</a>
+    </div>
+</div>
+{% endblock %}

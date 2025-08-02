@@ -48,6 +48,29 @@ body {
     background: var(--main-card) !important;
     color: var(--main-text) !important;
 }
+
+/* Stili specifici per i modali - unificati */
+.modal-content {
+    background-color: var(--main-card) !important;
+    color: var(--main-text) !important;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: var(--main-card) !important;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
+    background-color: var(--main-card) !important;
+}
 .btn, .btn-primary, .btn-secondary, .btn-success, .btn-info, .btn-warning, .btn-danger, button {
     border-radius: var(--main-btn-radius) !important;
     padding: var(--main-btn-padding) !important;
@@ -176,12 +199,18 @@ body.dark-mode {
 }
 body.dark-mode .card,
 body.dark-mode .container,
-body.dark-mode .table,
-body.dark-mode .modal-content {
+body.dark-mode .table {
   background-color: rgba(30,30,30,0.6) !important;
   color: #e0e0e0;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+/* Modal content con sfondo opaco per dark mode */
+body.dark-mode .modal-content {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #444;
 }
 body.dark-mode .table th,
 body.dark-mode .table td {
@@ -265,12 +294,18 @@ body {
   }
   body.dark-mode .card,
   body.dark-mode .container,
-  body.dark-mode .table,
-  body.dark-mode .modal-content {
+  body.dark-mode .table {
     background-color: rgba(30,30,30,0.6) !important;
     color: #e0e0e0;
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+  }
+  
+  /* Modal content con sfondo opaco per dark mode */
+  body.dark-mode .modal-content {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #444;
   }
   body.dark-mode .table th,
   body.dark-mode .table td {
@@ -303,6 +338,23 @@ body {
     border-color: #444;
   }
 
+  /* Input specifici nei modali in dark mode */
+  body.dark-mode .modal input,
+  body.dark-mode .modal select,
+  body.dark-mode .modal textarea {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border-color: #444 !important;
+  }
+
+  body.dark-mode .modal input:focus,
+  body.dark-mode .modal select:focus,
+  body.dark-mode .modal textarea:focus {
+    background-color: #333 !important;
+    border-color: var(--main-accent) !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 179, 71, 0.25);
+  }
+
   /* Dynamic Recall Message Styles */
   .dynamic-recall-msg {
     color: #232526 !important;
@@ -327,6 +379,23 @@ body {
     position: relative;
     z-index: 1;
     border-radius: 18px;
+  }
+
+  /* Dark mode - stili specifici per modali */
+  body.dark-mode .modal-content {
+    background-color: #1e1e1e !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #444;
+  }
+
+  body.dark-mode .modal-header,
+  body.dark-mode .modal-footer {
+    border-color: #444 !important;
+    background-color: #1e1e1e !important;
+  }
+
+  body.dark-mode .modal-body {
+    background-color: #1e1e1e !important;
   }
 
 
