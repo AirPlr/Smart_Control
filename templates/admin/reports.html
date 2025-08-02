@@ -52,9 +52,17 @@
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="generateBtn">
                                 <i class="fas fa-chart-line me-2"></i>Genera Report
                             </button>
+                        </div>
+                        
+                        <!-- Indicatore di caricamento inline -->
+                        <div id="loadingIndicator" class="text-center mt-3" style="display: none;">
+                            <div class="spinner-border text-primary me-2" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span class="text-muted">Generazione report in corso...</span>
                         </div>
                     </form>
                 </div>
@@ -114,51 +122,14 @@
         </div>
     </div>
 </div>
-
-<!-- Loading Modal -->
-<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body text-center py-4">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <h5>Generazione Report in corso...</h5>
-                <p class="text-muted">Attendere mentre elaboriamo i dati</p>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const reportForm = document.getElementById('reportForm');
-    const loadingModalElement = document.getElementById('loadingModal');
-    const loadingModal = new bootstrap.Modal(loadingModalElement);
-    
-    // Funzione helper per nascondere il modal in modo sicuro
-    function hideLoadingModal() {
-        try {
-            loadingModal.hide();
-        } catch (e) {
-            // Fallback usando jQuery se Bootstrap non funziona
-            if (typeof $ !== 'undefined') {
-                $(loadingModalElement).modal('hide');
-            } else {
-                // Fallback manuale
-                loadingModalElement.style.display = 'none';
-                loadingModalElement.classList.remove('show');
-                document.body.classList.remove('modal-open');
-                // Rimuovi backdrop se presente
-                const backdrop = document.querySelector('.modal-backdrop');
-                if (backdrop) {
-                    backdrop.remove();
-                }
-            }
-        }
-    }
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
     
     // Imposta date di default (ultimo mese)
     const today = new Date();
@@ -172,36 +143,26 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = new FormData(reportForm);
         
-        // Mostra loading
-        loadingModal.show();
-        
-        // Timeout di sicurezza per nascondere il modal dopo 30 secondi
-        const timeoutId = setTimeout(() => {
-            hideLoadingModal();
-            alert('Timeout: la generazione del report sta impiegando troppo tempo. Riprova più tardi.');
-        }, 30000);
+        // Mostra indicatore di caricamento e disabilita il pulsante
+        loadingIndicator.style.display = 'block';
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generazione in corso...';
         
         fetch('{{ url_for("admin.generate_report") }}', {
             method: 'POST',
             body: formData
         })
         .then(response => {
-            // Cancella il timeout
-            clearTimeout(timeoutId);
-            
-            // Nascondi sempre il modal quando arriva una risposta
-            setTimeout(() => {
-                hideLoadingModal();
-            }, 100);
-            
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             return response.json();
         })
         .then(data => {
-            // Assicurati che il modal sia nascosto
-            hideLoadingModal();
+            // Nasconde indicatore di caricamento e riabilita il pulsante
+            loadingIndicator.style.display = 'none';
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-chart-line me-2"></i>Genera Report';
             
             if (data.success) {
                 displayReport(data.data);
@@ -210,11 +171,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            // Cancella il timeout
-            clearTimeout(timeoutId);
+            // Nasconde indicatore di caricamento e riabilita il pulsante
+            loadingIndicator.style.display = 'none';
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-chart-line me-2"></i>Genera Report';
             
-            // Assicurati che il modal sia nascosto anche in caso di errore
-            hideLoadingModal();
             console.error('Error:', error);
             alert('Errore nella generazione del report: ' + error.message);
         });
@@ -348,11 +309,14 @@ document.addEventListener('DOMContentLoaded', function() {
             html += '</tbody></table></div>';
         }
         
-        // Aggiungi pulsante di esportazione
+        // Aggiungi pulsanti di esportazione e stampa
         html += `
             <div class="text-center mt-4">
-                <button class="btn btn-success" onclick="exportReport()">
-                    <i class="fas fa-download me-2"></i>Esporta Report
+                <button class="btn btn-success me-2" onclick="exportReport()">
+                    <i class="fas fa-download me-2"></i>Esporta PDF
+                </button>
+                <button class="btn btn-info" onclick="printReport()">
+                    <i class="fas fa-print me-2"></i>Stampa Report
                 </button>
             </div>
         `;
@@ -364,9 +328,65 @@ document.addEventListener('DOMContentLoaded', function() {
         resultsDiv.scrollIntoView({ behavior: 'smooth' });
     }
     
-    // Funzione di esportazione (placeholder)
+    // Funzione di stampa
+    window.printReport = function() {
+        const reportContent = document.getElementById('reportContent').innerHTML;
+        const reportTitle = document.querySelector('#reportContent h5').textContent;
+        
+        // Crea una nuova finestra per la stampa
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${reportTitle}</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    @media print {
+                        .no-print { display: none !important; }
+                        body { font-size: 12px; }
+                        .card { border: 1px solid #ddd !important; }
+                        .progress { border: 1px solid #ddd; }
+                    }
+                    body { padding: 20px; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 15px; }
+                    .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 10px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>Smart Control - ${reportTitle}</h2>
+                    <p class="text-muted">Generato il ${new Date().toLocaleDateString('it-IT')}</p>
+                </div>
+                <div class="content">
+                    ${reportContent.replace(/<div class="text-center mt-4">[\s\S]*?<\/div>/, '')}
+                </div>
+                <div class="footer">
+                    <p>Smart Control System - Report generato automaticamente</p>
+                </div>
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        
+        // Attendi che il contenuto sia caricato e poi stampa
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    };
+    
+    // Funzione di esportazione (placeholder migliorato)
     window.exportReport = function() {
-        alert('Funzione di esportazione non ancora implementata');
+        const reportContent = document.getElementById('reportContent');
+        const reportTitle = document.querySelector('#reportContent h5').textContent;
+        
+        // Per ora mostra un messaggio, in futuro si può implementare l'esportazione PDF
+        if (confirm('Vuoi esportare il report in formato PDF? (Funzione in sviluppo - per ora usa la stampa)')) {
+            // Fallback alla stampa
+            printReport();
+        }
     };
 });
 </script>
