@@ -52,9 +52,7 @@ class AppointmentService:
             appuntamenti_personali=max(0, int(data.get('appuntamenti_personali', 0))),
             venduto=bool(data.get('venduto', False)),
             data_appuntamento=data_appuntamento,
-            data_richiamo=data_richiamo,
-            created_by=user_id,
-            created_at=datetime.now()
+            data_richiamo=data_richiamo
         )
         
         # Associa consulenti se specificati
