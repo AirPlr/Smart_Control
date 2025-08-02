@@ -1,75 +1,186 @@
-<!doctype html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tutti gli Appuntamenti</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
-        <h1 class="text-center mb-4 text-primary">Tutti gli Appuntamenti</h1>
-        <form class="row mb-4">
-            <div class="col-md-8">
-                <input type="date" class="form-control" name="day" value="{{ request.args.get('day', '') }}">
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-info w-100">Filtra per Data</button>
-            </div>
-        </form>
-        
-        {% if appointments %}
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Cliente</th>
-                        <th>Consulenti</th>
-                        <th>Telefono</th>
-                        <th>Stato</th>
-                        <th>Data Richiamo</th>
-                        <th>Vendita Completata</th>
-                        <th>Azioni</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for app in appointments %}
-                    <tr>
-                        <td>{{ app.nome_cliente }}</td>
-                        <td>
-                            {% for consultant in app.consultants %}
-                                {{ consultant.nome }}{% if not loop.last %}, {% endif %}
-                            {% endfor %}
-                        </td>
-                        <td>{{ app.numero_telefono }}</td>
-                        <td>{{ app.stato }}</td>
-                        <td>{{ app.data_richiamo.strftime('%d/%m/%Y') if app.data_richiamo else 'N/A' }}</td>
-                        <td>
-                            {% if app.venduto %}
-                                <span class="badge bg-success">Sì</span>
-                            {% else %}
-                                <span class="badge bg-danger">No</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('main.modify_appointment', id=app.id) }}" class="btn btn-warning btn-sm">Modifica</a>
-                            <a href="{{ url_for('main.delete_appointment', id=app.id) }}" class="btn btn-danger btn-sm" 
-                               onclick="return confirm('Sei sicuro di voler eliminare questo appuntamento?')">Elimina</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-            <p class="text-center text-muted">Nessun appuntamento trovato.</p>
-        {% endif %}
-        
-        <div class="text-center mt-4">
-            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Torna alla Home</a>
+{% extends 'admin/base.html' %}
+
+{% block title %}Gestione Appuntamenti{% endblock %}
+
+{% block content %}
+<div class="admin-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="admin-page-title">
+            <i class="fas fa-calendar-alt me-2"></i>
+            Tutti gli Appuntamenti
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('main.add_appointment') }}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>
+                Nuovo Appuntamento
+            </a>
+            <button class="btn btn-info" onclick="refreshAppointments()">
+                <i class="fas fa-sync-alt me-2"></i>
+                Aggiorna
+            </button>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+
+    <!-- Filtri -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>
+                Filtri di Ricerca
+            </h5>
+        </div>
+        <div class="admin-card-body">
+            <form class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Data Specifica</label>
+                    <input type="date" class="form-control" name="day" value="{{ request.args.get('day', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Stato Appuntamento</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tutti gli stati</option>
+                        <option value="confermato">Confermato</option>
+                        <option value="pending">In Attesa</option>
+                        <option value="completato">Completato</option>
+                        <option value="cancellato">Cancellato</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>
+                        Filtra Risultati
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabella Appuntamenti -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                Elenco Appuntamenti
+                {% if appointments %}
+                <span class="badge bg-light text-dark ms-2">{{ appointments|length }} risultati</span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="admin-card-body p-0">
+            {% if appointments %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fas fa-user me-1"></i> Cliente</th>
+                            <th><i class="fas fa-users me-1"></i> Consulenti</th>
+                            <th><i class="fas fa-phone me-1"></i> Telefono</th>
+                            <th><i class="fas fa-info-circle me-1"></i> Stato</th>
+                            <th><i class="fas fa-calendar me-1"></i> Data Richiamo</th>
+                            <th><i class="fas fa-check-circle me-1"></i> Vendita</th>
+                            <th><i class="fas fa-cogs me-1"></i> Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in appointments %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle text-primary me-2"></i>
+                                    <strong>{{ app.nome_cliente }}</strong>
+                                </div>
+                            </td>
+                            <td>
+                                {% for consultant in app.consultants %}
+                                    <span class="badge bg-info me-1">{{ consultant.nome }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <a href="tel:{{ app.numero_telefono }}" class="text-decoration-none">
+                                    <i class="fas fa-phone text-success me-1"></i>
+                                    {{ app.numero_telefono }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if app.stato == 'confermato' %}
+                                    <span class="badge bg-success">{{ app.stato|title }}</span>
+                                {% elif app.stato == 'pending' %}
+                                    <span class="badge bg-warning">In Attesa</span>
+                                {% elif app.stato == 'completato' %}
+                                    <span class="badge bg-primary">{{ app.stato|title }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ app.stato|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.data_richiamo %}
+                                    <i class="fas fa-calendar-day text-info me-1"></i>
+                                    {{ app.data_richiamo.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    <span class="text-muted">Non impostata</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if app.venduto %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>
+                                        Vendita Completata
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times me-1"></i>
+                                        In Corso
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('main.modify_appointment', id=app.id) }}" 
+                                       class="btn btn-outline-primary btn-sm" title="Modifica">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('main.delete_appointment', id=app.id) }}" 
+                                       class="btn btn-outline-danger btn-sm" title="Elimina"
+                                       onclick="return confirm('Sei sicuro di voler eliminare questo appuntamento?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nessun appuntamento trovato</h5>
+                <p class="text-muted">Modifica i filtri di ricerca o aggiungi un nuovo appuntamento.</p>
+                <a href="{{ url_for('main.add_appointment') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Nuovo Appuntamento
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshAppointments() {
+    location.reload();
+}
+
+// Auto-submit form on filter change
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.querySelector('select[name="status"]');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

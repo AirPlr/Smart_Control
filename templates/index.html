@@ -1,53 +1,168 @@
-{% extends "base.html" %}
-{% block head %}
-    <style>
-        .floating-btn {
-            position: fixed !important;
-            inset: auto 24px 24px auto !important;
-            z-index: 3000 !important;
-            margin: 0 !important;
-            left: unset !important;
-            top: unset !important;
-            transform: none !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #chat-popup {
-            position: fixed;
-            bottom: 80px;
-            left: 20px;
-            width: 300px;
-            max-height: 400px;
-            border: 1px solid #ccc;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            border-radius: 10px;
-            overflow: hidden;
-            font-family: sans-serif;
-            z-index: 1050;
-        }
-        #chat-header {
-            background: #4CAF50;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-        }
-        #chat-box {
-            padding: 10px;
-            overflow-y: auto;
-            height: 250px;
-            font-size: 0.9rem;
-        }
-        #chat-input {
-            display: flex;
-            border-top: 1px solid #ddd;
-        }
-        #chat-input input {
-            flex: 1;
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard Principale{% endblock %}
+
+{% block styles %}
+<style>
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="admin-page-title">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Dashboard Controllo
+        </h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt me-2"></i>
+                Aggiorna
+            </button>
+            <button class="btn btn-success" onclick="openQuickAdd()">
+                <i class="fas fa-plus me-2"></i>
+                Azione Rapida
+            </button>
+        </div>
+    </div>
+
+    <!-- Metriche principali -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="admin-metric-card bg-primary">
+                <div class="admin-metric-value">{{ appointments_today }}</div>
+                <div class="admin-metric-label">
+                    <i class="fas fa-calendar-day me-2"></i>
+                    Appuntamenti Oggi
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="admin-metric-card bg-success">
+                <div class="admin-metric-value">{{ total_clients }}</div>
+                <div class="admin-metric-label">
+                    <i class="fas fa-users me-2"></i>
+                    Clienti Totali
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="admin-metric-card bg-info">
+                <div class="admin-metric-value">{{ pending_appointments }}</div>
+                <div class="admin-metric-label">
+                    <i class="fas fa-clock me-2"></i>
+                    Appuntamenti in Sospeso
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="admin-metric-card bg-warning">
+                <div class="admin-metric-value">{{ monthly_revenue }}</div>
+                <div class="admin-metric-label">
+                    <i class="fas fa-euro-sign me-2"></i>
+                    Ricavi Mensili
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenuto principale -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Panoramica Attività
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    <!-- Chart container o contenuto principale -->
+                    <div id="activity-chart" style="height: 300px;">
+                        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                            <div class="text-center">
+                                <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                                <p>Grafico attività in caricamento...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="admin-card mb-4">
+                <div class="admin-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>
+                        Azioni Rapide
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.add_appointment') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            Nuovo Appuntamento
+                        </a>
+                        <a href="{{ url_for('main.clients') }}" class="btn btn-success">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Aggiungi Cliente
+                        </a>
+                        <a href="{{ url_for('main.calendar') }}" class="btn btn-info">
+                            <i class="fas fa-calendar me-2"></i>
+                            Visualizza Calendario
+                        </a>
+                        <a href="{{ url_for('main.service') }}" class="btn btn-warning">
+                            <i class="fas fa-wrench me-2"></i>
+                            Centro Servizi
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell me-2"></i>
+                        Notifiche Recenti
+                    </h5>
+                </div>
+                <div class="admin-card-body">
+                    <div class="list-group list-group-flush">
+                        {% if recent_notifications %}
+                            {% for notification in recent_notifications %}
+                            <div class="list-group-item border-0 px-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <i class="fas fa-info-circle text-primary me-2"></i>
+                                        <small>{{ notification.message }}</small>
+                                    </div>
+                                    <small class="text-muted">{{ notification.created_at }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-3"></i>
+                            <p>Nessuna notifica recente</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Assistant Button -->
+<div class="floating-btn">
+    <button class="btn btn-primary rounded-circle" style="width: 60px; height: 60px;" onclick="toggleAIAssistant()">
+        <i class="fas fa-robot fa-lg"></i>
+    </button>
+</div>
+
+<!-- AI Chat Popup -->
+<div id="chat-popup" style="display: none;">
             padding: 10px;
             border: none;
             border-right: 1px solid #ddd;
@@ -60,118 +175,66 @@
             cursor: pointer;
         }
         #chat-toggle {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 28px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1051;
-        }
+    <div id="chat-header">
+        <i class="fas fa-robot me-2"></i>
+        Assistente AI
+    </div>
+    <div id="chat-box"></div>
+    <div id="chat-input">
+        <input type="text" placeholder="Scrivi un messaggio..." id="chat-message">
+        <button onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
 
-        
-    </style>
-{% endblock %}
-{% block content %}
-<div class="mt-4 spaced-section">
-    <h1 class="text-center mb-4">Smart Control</h1>
-    <h2 class="text-center text-primary">Calendario Richiami di Oggi ({{ current_date }})</h2>
-    
-    {% if recall_appointments %}
-    <div class="table-responsive mt-4">
-        <table class="table table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Cliente</th>
-                    <th>Consulenti</th>
-                    <th>Telefono</th>
-                    <th>Data Appuntamento</th>
-                    <th>Data Richiamo</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for app in recall_appointments %}
-                <tr>
-                    <td>{{ app.nome_cliente }}</td>
-                    <td>
-                        {% for consultant in app.consultants %}
-                            {{ consultant.nome }}{% if not loop.last %}, {% endif %}
-                        {% endfor %}
-                    </td>
-                    <td>{{ app.numero_telefono }}</td>
-                    <td>{{ app.data_appuntamento.strftime('%d/%m/%Y') if app.data_appuntamento else 'N/A' }}</td>
-                    <td>{{ app.data_richiamo.strftime('%d/%m/%Y') if app.data_richiamo else 'N/A' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-        <p class="text-center text-muted dynamic-recall-msg">Nessun richiamo per oggi.</p>
-    {% endif %}
-    
-    <hr class="my-4">
-    
-    <div class="d-flex flex-wrap justify-content-center gap-3">
-        <a href="{{ url_for('add_appointment') }}" class="btn btn-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-plus" viewBox="0 0 16 16">
-                <path d="M8 7a.5.5 0 0 1 .5.5V9H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V10H6a.5.5 0 0 1 0-1h1.5V7.5A.5.5 0 0 1 8 7"/>
-                <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
-            </svg> &nbsp; Aggiungi Appuntamento
-        </a>
-        <a href="{{ url_for('appointments') }}" class="btn btn-secondary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-event-fill" viewBox="0 0 16 16">
-                <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2m-3.5-7h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5"/>
-            </svg> &nbsp; Visualizza Tutti gli Appuntamenti
-        </a>
-        <a href="{{ url_for('add_consultant') }}" class="btn btn-info">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-add" viewBox="0 0 16 16">
-                <path d="M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0m-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4"/>
-                <path d="M8.256 14a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z"/>
-            </svg> &nbsp; Aggiungi Consulente
-        </a>
-        <a href="{{ url_for('consultants') }}" class="btn btn-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
-                <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
-            </svg> &nbsp; Gestisci consulenti
-        </a>
-    </div>
-    
-    
-</div>
-<!-- Modal conferma azione -->
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmModalLabel">Conferma azione</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
-      </div>
-      <div class="modal-body">
-        Sei sicuro di voler procedere?
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-        <button type="button" class="btn btn-danger" id="confirmActionBtn">Conferma</button>
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock %}
-{% block floating_button %}
-<a href="{{ url_for('generate_report') }}" class="btn btn-warning floating-btn" style="border-radius: 0.5rem;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy-fill" viewBox="0 0 16 16">
-        <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0H3v5.5A1.5 1.5 0 0 0 4.5 7h7A1.5 1.5 0 0 0 13 5.5V0h.086a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5H14v-5.5A1.5 1.5 0 0 0 12.5 9h-9A1.5 1.5 0 0 0 2 10.5V16h-.5A1.5 1.5 0 0 1 0 14.5z"/>
-        <path d="M3 16h10v-5.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5zm9-16H4v5.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5zM9 1h2v4H9z"/>
-    </svg> &nbsp; Esporta il report
-</a>
-{% endblock %}
 {% block scripts %}
-<!-- Eventuali script JS specifici della pagina -->
+<script>
+function refreshDashboard() {
+    location.reload();
+}
+
+function openQuickAdd() {
+    // Implementa azione rapida
+    window.location.href = "{{ url_for('main.add_appointment') }}";
+}
+
+function toggleAIAssistant() {
+    const popup = document.getElementById('chat-popup');
+    if (popup.style.display === 'none') {
+        popup.style.display = 'flex';
+        initializeChat();
+    } else {
+        popup.style.display = 'none';
+    }
+}
+
+function initializeChat() {
+    const chatBox = document.getElementById('chat-box');
+    if (!chatBox.innerHTML.trim()) {
+        chatBox.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-robot fa-2x mb-2"></i>
+                <p>Ciao! Sono il tuo assistente AI. Come posso aiutarti?</p>
+            </div>
+        `;
+    }
+}
+
+function sendMessage() {
+    const input = document.getElementById('chat-message');
+    const message = input.value.trim();
+    if (message) {
+        // Implementa logica invio messaggio
+        console.log('Messaggio inviato:', message);
+        input.value = '';
+    }
+}
+
+// Chiudi chat cliccando sull'header
+document.getElementById('chat-header')?.addEventListener('click', function() {
+    document.getElementById('chat-popup').style.display = 'none';
+});
+</script>
 {% endblock %}

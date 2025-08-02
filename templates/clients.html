@@ -1,33 +1,116 @@
-{% extends "base.html" %}
-{% block head %}{% endblock %}
+{% extends "admin/base.html" %}
+
+{% block title %}Gestione Clienti{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <h2>Clienti</h2>
-    <!-- Search Bar -->
-    <div class="mb-3">
-        <div class="input-group">
-            <input type="text" class="form-control" id="searchInput" placeholder="Cerca cliente" value="{{ search or '' }}">
-            <button class="btn btn-secondary" type="button" id="filterBtn">Filtri</button>
-            <button class="btn btn-primary" type="button" id="goBtn">Vai</button>
+<div class="admin-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="admin-page-title">
+            <i class="fas fa-users me-2"></i>
+            Gestione Clienti
+        </h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addClientModal">
+                <i class="fas fa-user-plus me-2"></i>
+                Nuovo Cliente
+            </button>
+            <button class="btn btn-info" onclick="refreshClients()">
+                <i class="fas fa-sync-alt me-2"></i>
+                Aggiorna
+            </button>
         </div>
     </div>
-    <ul class="list-group" id="clientList">
-        {% for client in clients %}
-        <li class="list-group-item client-item d-flex justify-content-between align-items-start"
-            data-id="{{ client.id }}"
-            data-name="{{ client.nome }}"
-            data-address="{{ client.indirizzo or '' }}"
-            data-phone="{{ client.numero_telefono or '' }}"
-            data-email="{{ client.email or '' }}"
-            data-registrazione="{{ client.data_registrazione.strftime('%d/%m/%Y') }}"
-            data-note="{{ client.note or '' }}"
-            data-consultants="{% if client.consultants %}{% for c in client.consultants %}{{ c.nome }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
-            data-venduto="{{ 'true' if client.nome in sold_names else 'false' }}">
-            <div>
-                <h5><b>{{ client.nome }}</b></h5>
 
-                <div class="mb-2 text-sm">
-                    <span class="me-2"><strong>Indirizzo:</strong> {{ client.indirizzo or 'N/D' }}</span>
+    <!-- Filtri e Ricerca -->
+    <div class="admin-card mb-4">
+        <div class="admin-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-search me-2"></i>
+                Ricerca e Filtri
+            </h5>
+        </div>
+        <div class="admin-card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Cerca per nome, telefono o email..." 
+                               value="{{ search or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">Tutti i clienti</option>
+                        <option value="venduto">Clienti con vendita</option>
+                        <option value="potenziale">Clienti potenziali</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" type="button" id="searchBtn">
+                            <i class="fas fa-search me-2"></i>
+                            Cerca
+                        </button>
+                        <button class="btn btn-secondary" type="button" id="resetBtn">
+                            <i class="fas fa-times me-2"></i>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista Clienti -->
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                Elenco Clienti
+                {% if clients %}
+                <span class="badge bg-light text-dark ms-2">{{ clients|length }} clienti</span>
+                {% endif %}
+            </h5>
+        </div>
+        <div class="admin-card-body p-0">
+            {% if clients %}
+            <div class="list-group list-group-flush" id="clientList">
+                {% for client in clients %}
+                <div class="list-group-item client-item"
+                     data-id="{{ client.id }}"
+                     data-name="{{ client.nome }}"
+                     data-address="{{ client.indirizzo or '' }}"
+                     data-phone="{{ client.numero_telefono or '' }}"
+                     data-email="{{ client.email or '' }}"
+                     data-registrazione="{{ client.data_registrazione.strftime('%d/%m/%Y') }}"
+                     data-note="{{ client.note or '' }}"
+                     data-consultants="{% if client.consultants %}{% for c in client.consultants %}{{ c.nome }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+                     data-venduto="{{ 'true' if client.nome in sold_names else 'false' }}">
+                    
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-user-circle text-primary fa-lg me-3"></i>
+                                <div>
+                                    <h5 class="mb-1 fw-bold">{{ client.nome }}</h5>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Registrato il {{ client.data_registrazione.strftime('%d/%m/%Y') }}
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% if client.indirizzo %}
+                                    <div class="mb-1">
+                                        <i class="fas fa-map-marker-alt text-info me-2"></i>
+                                        <small>{{ client.indirizzo }}</small>
+                                    </div>
+                                    {% endif %}
                     <span class="mx-2">|</span>
                     <span class="me-2"><strong>Telefono:</strong> {{ client.numero_telefono or 'N/D' }}</span>
                     <span class="mx-2">|</span>
