@@ -588,7 +588,7 @@ def appointments():
     # Statistiche
     stats = {
         'total': Appointment.query.count(),
-        'conclusi': Appointment.query.filter_by(stato='concluso').count(),
+        'conclusi': Appointment.query.filter(Appointment.stato.in_(['concluso', 'completato'])).count(),
         'da_richiamare': Appointment.query.filter_by(stato='da richiamare').count(),
         'venduti': Appointment.query.filter_by(venduto=True).count()
     }
@@ -640,7 +640,7 @@ def generate_report():
                 'period': f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}",
                 'total_appointments': len(appointments),
                 'sold_appointments': sum(1 for a in appointments if a.venduto),
-                'concluded_appointments': sum(1 for a in appointments if a.stato == 'concluso'),
+                'concluded_appointments': sum(1 for a in appointments if a.stato in ['concluso', 'completato']),
                 'pending_callbacks': sum(1 for a in appointments if a.stato == 'da richiamare'),
                 'appointments': [{
                     'nome_cliente': a.nome_cliente,

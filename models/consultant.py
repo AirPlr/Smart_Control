@@ -41,5 +41,6 @@ class Consultant(db.Model):
             'sold': sold,
             'conversion_rate': (sold / total * 100) if total > 0 else 0,
             'assistenza': len([a for a in appointments if a.tipologia == 'Assistenza']),
-            'dimostrazione': len([a for a in appointments if a.tipologia == 'Dimostrazione'])
+            'dimostrazione': len([a for a in appointments if a.tipologia == 'Dimostrazione']),
+            'consumabili': len([a for a in appointments if a.tipologia == 'Consumabili'])
         }

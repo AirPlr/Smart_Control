@@ -150,7 +150,8 @@ class User(UserMixin, db.Model):
                 'total': len(month_appointments),
                 'sold': len([a for a in month_appointments if a.venduto]),
                 'assistenza': len([a for a in month_appointments if a.tipologia == 'Assistenza']),
-                'dimostrazione': len([a for a in month_appointments if a.tipologia == 'Dimostrazione'])
+                'dimostrazione': len([a for a in month_appointments if a.tipologia == 'Dimostrazione']),
+                'consumabili': len([a for a in month_appointments if a.tipologia == 'Consumabili'])
             })
         
         # Target mensile (esempio: 20 appuntamenti al mese)
@@ -162,6 +163,7 @@ class User(UserMixin, db.Model):
             'sold_this_month': len([a for a in monthly_appointments if a.venduto]),
             'assistenza_count': len([a for a in monthly_appointments if a.tipologia == 'Assistenza']),
             'dimostrazione_count': len([a for a in monthly_appointments if a.tipologia == 'Dimostrazione']),
+            'consumabili_count': len([a for a in monthly_appointments if a.tipologia == 'Consumabili']),
             'monthly_target': monthly_target,
             'progress_percentage': min(100, current_progress),
             'months_comparison': months_data

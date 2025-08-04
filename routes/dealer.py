@@ -41,7 +41,8 @@ def dashboard():
             'total_this_month': 0,
             'sold_this_month': 0,
             'assistenza_count': 0,
-            'dimostrazione_count': 0
+            'dimostrazione_count': 0,
+            'consumabili_count': 0
         }
     
     # Aggiunge dati per grafici mobile
@@ -227,13 +228,15 @@ def reports():
             'total': len(monthly_appointments),
             'sold': len([a for a in monthly_appointments if a.venduto]),
             'assistenza': len([a for a in monthly_appointments if a.tipologia == 'Assistenza']),
-            'dimostrazione': len([a for a in monthly_appointments if a.tipologia == 'Dimostrazione'])
+            'dimostrazione': len([a for a in monthly_appointments if a.tipologia == 'Dimostrazione']),
+            'consumabili': len([a for a in monthly_appointments if a.tipologia == 'Consumabili'])
         },
         'yearly': {
             'total': len(yearly_appointments),
             'sold': len([a for a in yearly_appointments if a.venduto]),
             'assistenza': len([a for a in yearly_appointments if a.tipologia == 'Assistenza']),
-            'dimostrazione': len([a for a in yearly_appointments if a.tipologia == 'Dimostrazione'])
+            'dimostrazione': len([a for a in yearly_appointments if a.tipologia == 'Dimostrazione']),
+            'consumabili': len([a for a in yearly_appointments if a.tipologia == 'Consumabili'])
         }
     }
     
@@ -289,6 +292,10 @@ def generate_report():
                 'dimostrazione': {
                     'total': len([a for a in period_appointments if a.tipologia == 'Dimostrazione']),
                     'sold': len([a for a in period_appointments if a.tipologia == 'Dimostrazione' and a.venduto])
+                },
+                'consumabili': {
+                    'total': len([a for a in period_appointments if a.tipologia == 'Consumabili']),
+                    'sold': len([a for a in period_appointments if a.tipologia == 'Consumabili' and a.venduto])
                 }
             },
             'nominativi_raccolti': sum([a.nominativi_raccolti or 0 for a in period_appointments]),
@@ -337,7 +344,8 @@ def _get_weekly_stats(appointments):
             'total': len(day_appointments),
             'sold': len([a for a in day_appointments if a.venduto]),
             'assistenza': len([a for a in day_appointments if a.tipologia == 'Assistenza']),
-            'dimostrazione': len([a for a in day_appointments if a.tipologia == 'Dimostrazione'])
+            'dimostrazione': len([a for a in day_appointments if a.tipologia == 'Dimostrazione']),
+            'consumabili': len([a for a in day_appointments if a.tipologia == 'Consumabili'])
         }
     
     return daily_stats
@@ -388,5 +396,6 @@ def _calculate_period_stats(appointments, period):
         'sold': len([a for a in period_appointments if a.venduto]),
         'assistenza': len([a for a in period_appointments if a.tipologia == 'Assistenza']),
         'dimostrazione': len([a for a in period_appointments if a.tipologia == 'Dimostrazione']),
+        'consumabili': len([a for a in period_appointments if a.tipologia == 'Consumabili']),
         'conversion_rate': (len([a for a in period_appointments if a.venduto]) / len(period_appointments) * 100) if period_appointments else 0
     }

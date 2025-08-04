@@ -83,7 +83,7 @@
                         </h6>
                         <p class="text-muted small">
                             Statistiche dettagliate sugli appuntamenti in un periodo specifico: 
-                            totale appuntamenti, vendite concluse, appuntamenti in sospeso, 
+                            totale appuntamenti fissati, vendite concluse, appuntamenti conclusi, 
                             e dettagli per ogni appuntamento.
                         </p>
                     </div>
@@ -197,12 +197,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 
-                <div class="row mb-4">
+                <div class="row mb-4 stats-cards">
                     <div class="col-md-3">
                         <div class="card border-primary">
                             <div class="card-body text-center">
                                 <h3 class="text-primary">${data.total_appointments}</h3>
-                                <p class="mb-0">Totale Appuntamenti</p>
+                                <p class="mb-0">Totale Appuntamenti Fissati</p>
                             </div>
                         </div>
                     </div>
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tr>
                         <td>${app.nome_cliente}</td>
                         <td>${app.data_appuntamento}</td>
-                        <td><span class="badge ${app.stato === 'concluso' ? 'bg-success' : app.stato === 'da richiamare' ? 'bg-warning' : 'bg-danger'}">${app.stato}</span></td>
+                        <td><span class="badge ${(app.stato === 'concluso' || app.stato === 'completato') ? 'bg-success' : app.stato === 'da richiamare' ? 'bg-warning' : 'bg-danger'}">${app.stato === 'completato' ? 'concluso' : app.stato}</span></td>
                         <td>${app.venduto === 'Sì' ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'} ${app.venduto}</td>
                         <td>${app.consultants}</td>
                     </tr>
@@ -347,6 +347,32 @@ document.addEventListener('DOMContentLoaded', function() {
                         body { font-size: 12px; }
                         .card { border: 1px solid #ddd !important; }
                         .progress { border: 1px solid #ddd; }
+                        .stats-cards { 
+                            display: flex !important; 
+                            flex-wrap: nowrap !important; 
+                        }
+                        .stats-cards .col-md-3 { 
+                            flex: 1 !important; 
+                            min-width: 0 !important; 
+                            margin-right: 10px !important;
+                        }
+                        .stats-cards .col-md-3:last-child { 
+                            margin-right: 0 !important; 
+                        }
+                        .stats-cards .card { 
+                            margin-bottom: 0 !important; 
+                            height: auto !important;
+                        }
+                        .stats-cards .card-body {
+                            padding: 10px !important;
+                        }
+                        .stats-cards h3 {
+                            font-size: 18px !important;
+                            margin-bottom: 5px !important;
+                        }
+                        .stats-cards p {
+                            font-size: 10px !important;
+                        }
                     }
                     body { padding: 20px; }
                     .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 15px; }

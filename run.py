@@ -199,7 +199,7 @@ def init_demo_data():
             nome_cliente=f"Cliente Demo {i+1}",
             numero_telefono=f"333123456{i:02d}",
             indirizzo=f"Via Demo {i+1}, Milano",
-            tipologia=random.choice(['Assistenza', 'Dimostrazione']),
+            tipologia=random.choice(['Assistenza', 'Dimostrazione', 'Consumabili']),
             stato=random.choice(['concluso', 'da richiamare', 'non richiamare']),
             venduto=random.choice([True, False]),
             data_appuntamento=datetime.now() - timedelta(days=random.randint(0, 30)),

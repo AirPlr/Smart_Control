@@ -162,9 +162,7 @@ CONTEXT_PROMPTS = {
     'clients': "Focus su gestione e analisi clienti. Priorità a segmentazione, valore cliente, storico interazioni.",
     'appointments': "Focus su calendario e appuntamenti. Priorità a ottimizzazione tempo, conflitti, pianificazione.",
     'reports': "Focus su analisi e reporting. Priorità a KPI, trend, insights actionable.",
-    'dashboard': "Focus su overview generale. Priorità a metriche chiave, alert, raccomandazioni immediate."
-}
-    ],
+    'dashboard': "Focus su overview generale. Priorità a metriche chiave, alert, raccomandazioni immediate.",
     'correction': [
         'Ho corretto l\'errore precedente. Ecco la risposta aggiornata:',
         'Dopo la correzione automatica, la risposta corretta è:',
@@ -236,12 +234,7 @@ CONTEXT_PROMPTS = {
     'clients': "Focus su gestione e analisi clienti. Priorità a segmentazione, valore cliente, storico interazioni.",
     'appointments': "Focus su calendario e appuntamenti. Priorità a ottimizzazione tempo, conflitti, pianificazione.",
     'reports': "Focus su analisi e reporting. Priorità a KPI, trend, insights actionable.",
-    'dashboard': "Focus su overview generale. Priorità a metriche chiave, alert, raccomandazioni immediate."
-}
-        'Puoi chiedermi informazioni su appuntamenti, clienti e statistiche.',
-        'Sono qui per aiutarti con le funzioni del sistema.',
-        'Posso assisterti con domande sui dati e le operazioni.'
-    ],
+    'dashboard': "Focus su overview generale. Priorità a metriche chiave, alert, raccomandazioni immediate.",
     'error': [
         'Mi dispiace, ho riscontrato un problema. Riprova più tardi.',
         'Non riesco a elaborare la richiesta al momento.',
