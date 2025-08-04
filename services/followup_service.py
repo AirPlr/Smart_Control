@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from models.followup import FollowUp
 from models.appointment import Appointment
+from models.consultant import Consultant
 from models.user import db
 import logging
 
@@ -12,10 +13,12 @@ class FollowUpService:
     
     # Configurazione follow-up automatici
     DEFAULT_FOLLOWUP_SCHEDULE = [
-        {'days': 7, 'type': 'first_check', 'priority': 'high', 'title': 'Primo controllo post-vendita'},
-        {'days': 30, 'type': 'satisfaction_check', 'priority': 'medium', 'title': 'Controllo soddisfazione'},
-        {'days': 90, 'type': 'renewal_opportunity', 'priority': 'medium', 'title': 'Opportunità rinnovo'},
-        {'days': 180, 'type': 'long_term_check', 'priority': 'low', 'title': 'Controllo lungo termine'}
+        {'numero': 1, 'days': 2, 'title': 'Primo controllo post-vendita'},
+        {'numero': 2, 'days': 21, 'title': 'Controllo soddisfazione'},
+        {'numero': 3, 'days': 90, 'title': 'Primo follow-up trimestrale'},
+        {'numero': 4, 'days': 180, 'title': 'Secondo follow-up trimestrale'},
+        {'numero': 5, 'days': 270, 'title': 'Terzo follow-up trimestrale'},
+        {'numero': 6, 'days': 360, 'title': 'Follow-up annuale'}
     ]
     
     @staticmethod
@@ -36,10 +39,10 @@ class FollowUpService:
             if due_date < datetime.now() - timedelta(days=7):
                 continue
             
-            # Verifica se esiste già un follow-up simile
+            # Verifica se esiste già un follow-up simile per questo numero
             existing = FollowUp.query.filter_by(
                 appointment_id=appointment.id,
-                followup_type=schedule['type']
+                numero=schedule['numero']
             ).first()
             
             if existing:
@@ -47,13 +50,10 @@ class FollowUpService:
             
             followup = FollowUp(
                 appointment_id=appointment.id,
-                title=schedule['title'],
-                due_date=due_date,
-                followup_type=schedule['type'],
-                priority=schedule['priority'],
-                status='pending',
-                notes=f"Follow-up automatico per vendita del {appointment.data_appuntamento.strftime('%d/%m/%Y')}.\nCliente: {appointment.nome_cliente}\nTelefono: {appointment.numero_telefono}",
-                created_at=datetime.now()
+                numero=schedule['numero'],
+                data_prevista=due_date,
+                done=False,
+                note=f"Follow-up automatico per vendita del {appointment.data_appuntamento.strftime('%d/%m/%Y')}.\nCliente: {appointment.nome_cliente}\nTelefono: {appointment.numero_telefono}"
             )
             
             db.session.add(followup)
@@ -77,13 +77,13 @@ class FollowUpService:
             raise ValueError("Appuntamento non trovato")
         
         # Validazione dati richiesti
-        required_fields = ['title', 'due_date']
+        required_fields = ['numero', 'data_prevista']
         for field in required_fields:
             if not data.get(field):
                 raise ValueError(f"Campo richiesto: {field}")
         
         try:
-            due_date = datetime.strptime(data['due_date'], '%Y-%m-%d')
+            due_date = datetime.strptime(data['data_prevista'], '%Y-%m-%d')
             if due_date.date() < datetime.now().date():
                 raise ValueError("Data scadenza non può essere nel passato")
         except ValueError as e:
@@ -91,14 +91,10 @@ class FollowUpService:
         
         followup = FollowUp(
             appointment_id=appointment_id,
-            title=data['title'].strip(),
-            due_date=due_date,
-            followup_type=data.get('followup_type', 'manual'),
-            priority=data.get('priority', 'medium'),
-            status='pending',
-            notes=data.get('notes', '').strip(),
-            created_by=user_id,
-            created_at=datetime.now()
+            numero=int(data['numero']),
+            data_prevista=due_date,
+            done=False,
+            note=data.get('note', '').strip()
         )
         
         try:
@@ -113,27 +109,20 @@ class FollowUpService:
     
     @staticmethod
     def get_pending_followups(consultant_id: Optional[int] = None, 
-                            priority: Optional[str] = None,
                             overdue_only: bool = False) -> List[FollowUp]:
         """Recupera follow-up pendenti con filtri"""
         
-        query = FollowUp.query.filter_by(completed=False)
+        query = FollowUp.query.filter_by(done=False)
         
         if consultant_id:
             query = (query.join(FollowUp.appointment)
                     .join(Appointment.consultants)
                     .filter(Consultant.id == consultant_id))
         
-        if priority:
-            query = query.filter(FollowUp.priority == priority)
-        
         if overdue_only:
-            query = query.filter(FollowUp.due_date < datetime.now())
+            query = query.filter(FollowUp.data_prevista < datetime.now())
         
-        return query.order_by(
-            FollowUp.priority == 'high',
-            FollowUp.due_date.asc()
-        ).all()
+        return query.order_by(FollowUp.data_prevista.asc()).all()
     
     @staticmethod
     def complete_followup(followup_id: int, completion_notes: str, user_id: int) -> FollowUp:
@@ -143,17 +132,14 @@ class FollowUpService:
         if not followup:
             raise ValueError("Follow-up non trovato")
         
-        if followup.completed:
+        if followup.done:
             raise ValueError("Follow-up già completato")
         
-        followup.completed = True
-        followup.completed_date = datetime.now()
-        followup.completed_by = user_id
-        followup.completion_notes = completion_notes.strip() if completion_notes else ""
+        followup.done = True
         
         # Aggiorna le note principali
         completion_info = f"\n\n--- COMPLETATO il {datetime.now().strftime('%d/%m/%Y alle %H:%M')} ---\n{completion_notes}"
-        followup.notes = (followup.notes or "") + completion_info
+        followup.note = (followup.note or "") + completion_info
         
         try:
             db.session.commit()
@@ -172,18 +158,18 @@ class FollowUpService:
         if not followup:
             raise ValueError("Follow-up non trovato")
         
-        if followup.completed:
+        if followup.done:
             raise ValueError("Non è possibile posticipare un follow-up completato")
         
         if new_due_date <= datetime.now():
             raise ValueError("La nuova data deve essere futura")
         
-        old_date = followup.due_date
-        followup.due_date = new_due_date
+        old_date = followup.data_prevista
+        followup.data_prevista = new_due_date
         
         # Aggiorna note con informazioni del posticipo
         postpone_info = f"\n\n--- POSTICIPATO il {datetime.now().strftime('%d/%m/%Y alle %H:%M')} ---\nDa: {old_date.strftime('%d/%m/%Y')}\nA: {new_due_date.strftime('%d/%m/%Y')}\nMotivo: {reason}"
-        followup.notes = (followup.notes or "") + postpone_info
+        followup.note = (followup.note or "") + postpone_info
         
         try:
             db.session.commit()
@@ -218,7 +204,7 @@ class FollowUpService:
         
         date_from = datetime.now() - timedelta(days=days)
         
-        query = FollowUp.query.filter(FollowUp.created_at >= date_from)
+        query = FollowUp.query.filter(FollowUp.data_prevista >= date_from)
         
         if consultant_id:
             query = (query.join(FollowUp.appointment)
@@ -229,12 +215,9 @@ class FollowUpService:
         
         stats = {
             'total_followups': len(all_followups),
-            'completed_followups': len([f for f in all_followups if f.completed]),
-            'pending_followups': len([f for f in all_followups if not f.completed]),
-            'overdue_followups': len([f for f in all_followups if not f.completed and f.due_date < datetime.now()]),
-            'high_priority': len([f for f in all_followups if f.priority == 'high']),
-            'medium_priority': len([f for f in all_followups if f.priority == 'medium']),
-            'low_priority': len([f for f in all_followups if f.priority == 'low'])
+            'completed_followups': len([f for f in all_followups if f.done]),
+            'pending_followups': len([f for f in all_followups if not f.done]),
+            'overdue_followups': len([f for f in all_followups if not f.done and f.data_prevista < datetime.now()])
         }
         
         # Calcola tasso completamento
@@ -253,9 +236,9 @@ class FollowUpService:
         future_date = today + timedelta(days=days_ahead)
         
         query = FollowUp.query.filter(
-            FollowUp.completed == False,
-            FollowUp.due_date >= today,
-            FollowUp.due_date <= future_date
+            FollowUp.done == False,
+            FollowUp.data_prevista >= today,
+            FollowUp.data_prevista <= future_date
         )
         
         if consultant_id:
@@ -263,4 +246,4 @@ class FollowUpService:
                     .join(Appointment.consultants)
                     .filter(Consultant.id == consultant_id))
         
-        return query.order_by(FollowUp.due_date.asc()).all()
+        return query.order_by(FollowUp.data_prevista.asc()).all()

@@ -151,7 +151,7 @@ class ClientService:
         for appointment in appointments:
             appointment_followups = FollowUp.query.filter_by(
                 appointment_id=appointment.id
-            ).order_by(FollowUp.due_date.desc()).all()
+            ).order_by(FollowUp.data_prevista.desc()).all()
             followups.extend(appointment_followups)
         
         # Statistiche
@@ -159,7 +159,7 @@ class ClientService:
             'total_appointments': len(appointments),
             'sold_appointments': len([a for a in appointments if a.venduto]),
             'total_followups': len(followups),
-            'completed_followups': len([f for f in followups if f.completed]),
+            'completed_followups': len([f for f in followups if f.done]),
             'first_appointment': appointments[-1].data_appuntamento if appointments else None,
             'last_appointment': appointments[0].data_appuntamento if appointments else None,
             'conversion_rate': (
@@ -173,10 +173,10 @@ class ClientService:
             'appointments': [a.to_dict() for a in appointments],
             'followups': [f.to_dict() if hasattr(f, 'to_dict') else {
                 'id': f.id,
-                'title': f.title,
-                'due_date': f.due_date.isoformat(),
-                'completed': f.completed,
-                'priority': f.priority
+                'numero': f.numero,
+                'data_prevista': f.data_prevista.isoformat(),
+                'done': f.done,
+                'note': f.note
             } for f in followups],
             'stats': stats
         }
