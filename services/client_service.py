@@ -22,13 +22,13 @@ class ClientService:
         phone = ClientService._normalize_phone(appointment.numero_telefono)
         
         # Verifica se cliente esiste già
-        existing_client = Client.query.filter_by(phone=phone).first()
+        existing_client = Client.query.filter_by(numero_telefono=phone).first()
         if existing_client:
             # Aggiorna informazioni se necessario
-            if not existing_client.name or len(appointment.nome_cliente) > len(existing_client.name):
-                existing_client.name = appointment.nome_cliente
-            if not existing_client.address and appointment.indirizzo:
-                existing_client.address = appointment.indirizzo
+            if not existing_client.nome or len(appointment.nome_cliente) > len(existing_client.nome):
+                existing_client.nome = appointment.nome_cliente
+            if not existing_client.indirizzo and appointment.indirizzo:
+                existing_client.indirizzo = appointment.indirizzo
             
             db.session.commit()
             logger.info(f"Cliente {existing_client.id} aggiornato da appuntamento {appointment.id}")
@@ -36,13 +36,11 @@ class ClientService:
         
         # Crea nuovo cliente
         client = Client(
-            name=appointment.nome_cliente.strip(),
-            phone=phone,
-            address=appointment.indirizzo.strip() if appointment.indirizzo else '',
-            acquisition_date=appointment.data_appuntamento,
-            source='appointment',
-            status='active',
-            notes=f"Cliente acquisito da appuntamento del {appointment.data_appuntamento.strftime('%d/%m/%Y')}"
+            nome=appointment.nome_cliente.strip(),
+            numero_telefono=phone,
+            indirizzo=appointment.indirizzo.strip() if appointment.indirizzo else '',
+            data_registrazione=appointment.data_appuntamento,
+            note=f"Cliente acquisito da appuntamento del {appointment.data_appuntamento.strftime('%d/%m/%Y')}"
         )
         
         try:
@@ -60,31 +58,28 @@ class ClientService:
         """Crea cliente manualmente"""
         
         # Validazione dati richiesti
-        required_fields = ['name', 'phone']
+        required_fields = ['nome', 'numero_telefono']
         for field in required_fields:
             if not data.get(field):
                 raise ValueError(f"Campo richiesto: {field}")
         
         # Normalizza e valida telefono
-        phone = ClientService._normalize_phone(data['phone'])
+        phone = ClientService._normalize_phone(data['numero_telefono'])
         if not ClientService._validate_phone(phone):
             raise ValueError("Numero di telefono non valido")
         
         # Verifica se cliente esiste già
-        existing_client = Client.query.filter_by(phone=phone).first()
+        existing_client = Client.query.filter_by(numero_telefono=phone).first()
         if existing_client:
             raise ValueError(f"Cliente con telefono {phone} già esistente")
         
         client = Client(
-            name=data['name'].strip(),
-            phone=phone,
+            nome=data['nome'].strip(),
+            numero_telefono=phone,
             email=data.get('email', '').strip(),
-            address=data.get('address', '').strip(),
-            acquisition_date=datetime.now(),
-            source=data.get('source', 'manual'),
-            status='active',
-            notes=data.get('notes', '').strip(),
-            created_by=user_id
+            indirizzo=data.get('indirizzo', '').strip(),
+            data_registrazione=datetime.now(),
+            note=data.get('note', '').strip()
         )
         
         try:
@@ -106,15 +101,15 @@ class ClientService:
             raise ValueError("Cliente non trovato")
         
         # Campi aggiornabili
-        updatable_fields = ['name', 'email', 'address', 'status', 'notes']
+        updatable_fields = ['nome', 'email', 'indirizzo', 'note']
         
         for field in updatable_fields:
             if field in data and data[field] is not None:
                 setattr(client, field, str(data[field]).strip())
         
         # Aggiorna telefono con validazione
-        if 'phone' in data:
-            new_phone = ClientService._normalize_phone(data['phone'])
+        if 'numero_telefono' in data:
+            new_phone = ClientService._normalize_phone(data['numero_telefono'])
             if not ClientService._validate_phone(new_phone):
                 raise ValueError("Numero di telefono non valido")
             
@@ -127,9 +122,6 @@ class ClientService:
                 raise ValueError(f"Telefono {new_phone} già utilizzato da altro cliente")
             
             client.numero_telefono = new_phone
-        
-        client.updated_at = datetime.now()
-        client.updated_by = user_id
         
         try:
             db.session.commit()
@@ -197,18 +189,18 @@ class ClientService:
         
         return Client.query.filter(
             db.or_(
-                Client.name.ilike(search_pattern),
+                Client.nome.ilike(search_pattern),
                 Client.numero_telefono.ilike(search_pattern),
                 Client.email.ilike(search_pattern)
             )
-        ).order_by(Client.name.asc()).limit(limit).all()
+        ).order_by(Client.nome.asc()).limit(limit).all()
     
     @staticmethod
     def get_clients_by_status(status: str = 'active') -> List[Client]:
-        """Recupera clienti per status"""
+        """Recupera tutti i clienti ordinati per data registrazione"""
         
-        return Client.query.filter_by(status=status).order_by(
-            Client.acquisition_date.desc()
+        return Client.query.order_by(
+            Client.data_registrazione.desc()
         ).all()
     
     @staticmethod
@@ -219,8 +211,8 @@ class ClientService:
         date_from = datetime.now() - timedelta(days=days)
         
         total_clients = Client.query.count()
-        new_clients = Client.query.filter(Client.acquisition_date >= date_from).count()
-        active_clients = Client.query.filter_by(status='active').count()
+        new_clients = Client.query.filter(Client.data_registrazione >= date_from).count()
+        active_clients = Client.query.count()  # Tutti i clienti sono considerati attivi
         
         # Clienti con appuntamenti recenti
         recent_appointments = Appointment.query.filter(
@@ -249,11 +241,8 @@ class ClientService:
         if not client:
             raise ValueError("Cliente non trovato")
         
-        # Soft delete - marca come inattivo
-        client.status = 'deleted'
-        client.updated_at = datetime.now()
-        client.updated_by = user_id
-        client.notes = (client.notes or '') + f"\n\nEliminato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}"
+        # Aggiungi nota di eliminazione
+        client.note = (client.note or '') + f"\n\nEliminato il {datetime.now().strftime('%d/%m/%Y alle %H:%M')}"
         
         try:
             db.session.commit()

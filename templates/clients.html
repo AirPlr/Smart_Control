@@ -305,7 +305,7 @@
             var q = $('#searchInput').val().toLowerCase();
             $('.client-item').each(function(){
                 var data = $(this).data();
-                var text = [data.name, data.address, data.phone, data.email, data.registrazione, data.note].join(' ').toLowerCase();
+                var text = [data.name, data.address, data.numero_telefono, data.email, data.registrazione, data.note].join(' ').toLowerCase();
                 var matchQ = !q || text.indexOf(q) !== -1;
                 var matchVend = filters.venduto===null || (filters.venduto === true && data.venduto) || (filters.venduto === false && !data.venduto);
                 if(matchQ && matchVend) $(this).show(); else $(this).hide();
