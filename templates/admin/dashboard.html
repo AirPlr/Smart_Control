@@ -144,13 +144,13 @@
                     <div class="col-md-3 mb-3">
                         <div class="text-center">
                             <div class="mb-3">
-                                <i class="fas fa-chart-bar fa-3x text-warning mb-2"></i>
-                                <h6>Report</h6>
-                                <p class="text-muted small">Visualizza statistiche e report</p>
+                                <i class="fas fa-tools fa-3x text-warning mb-2"></i>
+                                <h6>Servizi</h6>
+                                <p class="text-muted small">Gestisci follow-up e servizi post-vendita</p>
                             </div>
-                            <button class="admin-btn btn-warning" onclick="generateQuickReport()">
-                                <i class="fas fa-chart-line me-2"></i>Genera
-                            </button>
+                            <a href="{{ url_for('admin.service') }}" class="admin-btn btn-warning">
+                                <i class="fas fa-tools me-2"></i>Gestisci
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -192,7 +192,15 @@
                                             <br><small class="text-muted">{{ appointment.telefono }}</small>
                                         {% endif %}
                                     </td>
-                                    <td>{{ appointment.consulente.nome if appointment.consulente else 'N/A' }}</td>
+                                    <td>
+                                        {% if appointment.consultants %}
+                                            {% for consultant in appointment.consultants %}
+                                                <span class="badge bg-info me-1">{{ consultant.nome }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">Nessuno</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <small>{{ appointment.data_appuntamento.strftime('%d/%m/%Y') }}</small>
                                         <br><small class="text-muted">{{ appointment.data_appuntamento.strftime('%H:%M') }}</small>
@@ -262,6 +270,49 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Follow-up in Ritardo -->
+        <div class="admin-card mb-4">
+            <div class="admin-card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Follow-up in Ritardo
+                    {% if data.overdue_followups is defined %}
+                        <span class="badge bg-danger ms-2">{{ data.overdue_followups|length }}</span>
+                    {% endif %}
+                </h6>
+            </div>
+            <div class="admin-card-body p-2">
+                {% if data.overdue_followups is defined and data.overdue_followups %}
+                    <div class="list-group list-group-flush">
+                        {% for followup in data.overdue_followups[:5] %}
+                        <div class="list-group-item border-0 rounded mb-2 bg-light">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ followup.appointment.nome_cliente }}</h6>
+                                <small class="text-danger">{{ followup.numero }}° follow-up</small>
+                            </div>
+                            <p class="mb-1 small">{{ followup.appointment.numero_telefono }}</p>
+                            <small class="text-muted">Previsto: {{ followup.data_prevista.strftime('%d/%m/%Y') }}</small>
+                        </div>
+                        {% endfor %}
+                        {% if data.overdue_followups|length > 5 %}
+                        <div class="text-center">
+                            <small class="text-muted">E altri {{ data.overdue_followups|length - 5 }} follow-up...</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('admin.service') }}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-tools me-1"></i>Gestisci Tutti
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                        <p class="mb-0 small text-muted">Nessun follow-up in ritardo!</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
 

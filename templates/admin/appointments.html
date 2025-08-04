@@ -104,9 +104,10 @@
                     <label for="status" class="form-label">Stato</label>
                     <select name="status" id="status" class="form-select">
                         <option value="">Tutti gli stati</option>
-                        <option value="concluso" {{ 'selected' if request.args.get('status') == 'concluso' }}>Concluso</option>
-                        <option value="da richiamare" {{ 'selected' if request.args.get('status') == 'da richiamare' }}>Da Richiamare</option>
-                        <option value="non richiamare" {{ 'selected' if request.args.get('status') == 'non richiamare' }}>Non Richiamare</option>
+                        <option value="completato" {{ 'selected' if request.args.get('status') == 'completato' }}>Completato</option>
+                        <option value="completato da richiamare" {{ 'selected' if request.args.get('status') == 'completato da richiamare' }}>Completato da Richiamare</option>
+                        <option value="saltato da richiamare" {{ 'selected' if request.args.get('status') == 'saltato da richiamare' }}>Saltato da Richiamare</option>
+                        <option value="saltato da non richiamare" {{ 'selected' if request.args.get('status') == 'saltato da non richiamare' }}>Saltato da Non Richiamare</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -182,9 +183,11 @@
                             </td>
                             <td>
                                 <span class="badge 
-                                    {% if appointment.stato == 'concluso' %}bg-success
-                                    {% elif appointment.stato == 'da richiamare' %}bg-warning
-                                    {% else %}bg-danger{% endif %}">
+                                    {% if appointment.stato == 'completato' %}bg-success
+                                    {% elif appointment.stato == 'completato da richiamare' %}bg-warning
+                                    {% elif appointment.stato == 'saltato da richiamare' %}bg-danger
+                                    {% elif appointment.stato == 'saltato da non richiamare' %}bg-secondary
+                                    {% else %}bg-primary{% endif %}">
                                     {{ appointment.stato.title() }}
                                 </span>
                             </td>

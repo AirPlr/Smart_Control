@@ -1,0 +1,498 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Service - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-tools me-2"></i>Gestione Servizi Post-Vendita
+        </h1>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiche Follow-up -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Totale Follow-up</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ data.total_followups }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">Completati</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ data.completed_followups }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">In Scadenza</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ data.upcoming_followups|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white mb-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1">In Ritardo</div>
+                            <div class="h5 mb-0 font-weight-bold">{{ data.overdue_followups|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasso di completamento -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">Tasso di Completamento</h6>
+                </div>
+                <div class="card-body">
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ data.completion_rate }}%" 
+                             aria-valuenow="{{ data.completion_rate }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ data.completion_rate }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Follow-up in Ritardo -->
+    {% if data.overdue_followups %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>Follow-up in Ritardo
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Telefono</th>
+                            <th>Numero</th>
+                            <th>Data Prevista</th>
+                            <th>Ritardo (giorni)</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for followup in data.overdue_followups %}
+                        <tr class="table-danger">
+                            <td><strong>{{ followup.appointment.nome_cliente }}</strong></td>
+                            <td>{{ followup.appointment.numero_telefono }}</td>
+                            <td>{{ followup.numero }}</td>
+                            <td>{{ followup.data_prevista.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% set days_overdue = (data.today.date() - followup.data_prevista.date()).days %}
+                                <span class="badge bg-danger">{{ days_overdue }} giorni</span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-success" onclick="completeFollowup({{ followup.id }})">
+                                        <i class="fas fa-check"></i> Realizzato
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" onclick="skipFollowup({{ followup.id }})">
+                                        <i class="fas fa-times"></i> Saltato
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="postponeFollowup({{ followup.id }})">
+                                        <i class="fas fa-calendar"></i> Posticipa
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Follow-up in Scadenza -->
+    {% if data.upcoming_followups %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-warning">
+                <i class="fas fa-clock me-2"></i>Follow-up in Scadenza (Prossimi 7 giorni)
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Telefono</th>
+                            <th>Numero</th>
+                            <th>Data Prevista</th>
+                            <th>Giorni Rimanenti</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for followup in data.upcoming_followups %}
+                        <tr class="table-warning">
+                            <td><strong>{{ followup.appointment.nome_cliente }}</strong></td>
+                            <td>{{ followup.appointment.numero_telefono }}</td>
+                            <td>{{ followup.numero }}</td>
+                            <td>{{ followup.data_prevista.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% set days_remaining = (followup.data_prevista.date() - data.today.date()).days %}
+                                <span class="badge bg-warning">{{ days_remaining }} giorni</span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-success" onclick="completeFollowup({{ followup.id }})">
+                                        <i class="fas fa-check"></i> Realizzato
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" onclick="skipFollowup({{ followup.id }})">
+                                        <i class="fas fa-times"></i> Saltato
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="postponeFollowup({{ followup.id }})">
+                                        <i class="fas fa-calendar"></i> Posticipa
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tutti i Follow-up Pendenti -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-list me-2"></i>Tutti i Follow-up Pendenti
+            </h6>
+        </div>
+        <div class="card-body">
+            {% if data.pending_followups %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Telefono</th>
+                            <th>Numero</th>
+                            <th>Data Prevista</th>
+                            <th>Stato</th>
+                            <th>Note</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for followup in data.pending_followups %}
+                        <tr>
+                            <td><strong>{{ followup.appointment.nome_cliente }}</strong></td>
+                            <td>{{ followup.appointment.numero_telefono }}</td>
+                            <td>{{ followup.numero }}</td>
+                            <td>{{ followup.data_prevista.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if followup.data_prevista.date() < data.today.date() %}
+                                    <span class="badge bg-danger">In Ritardo</span>
+                                {% elif (followup.data_prevista.date() - data.today.date()).days <= 7 %}
+                                    <span class="badge bg-warning">In Scadenza</span>
+                                {% else %}
+                                    <span class="badge bg-info">Programmato</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if followup.note %}
+                                    <button class="btn btn-sm btn-outline-info" onclick="showNotes('{{ followup.note|replace('\n', '\\n')|replace('\'', '\\\'') }}')">
+                                        <i class="fas fa-eye"></i> Visualizza
+                                    </button>
+                                {% else %}
+                                    <span class="text-muted">Nessuna nota</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-success" onclick="completeFollowup({{ followup.id }})">
+                                        <i class="fas fa-check"></i> Realizzato
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" onclick="skipFollowup({{ followup.id }})">
+                                        <i class="fas fa-times"></i> Saltato
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="postponeFollowup({{ followup.id }})">
+                                        <i class="fas fa-calendar"></i> Posticipa
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <h5>Nessun follow-up pendente</h5>
+                <p class="text-muted">Tutti i follow-up sono stati completati!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal per completamento follow-up -->
+<div class="modal fade" id="completeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Completa Follow-up</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="completionNotes" class="form-label">Note di completamento:</label>
+                    <textarea class="form-control" id="completionNotes" rows="3" placeholder="Descrivi l'attività svolta..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-success" id="confirmComplete">Completa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per saltare follow-up -->
+<div class="modal fade" id="skipModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Salta Follow-up</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="skipReason" class="form-label">Motivo:</label>
+                    <select class="form-select" id="skipReason">
+                        <option value="Cliente non raggiungibile">Cliente non raggiungibile</option>
+                        <option value="Cliente non interessato">Cliente non interessato</option>
+                        <option value="Servizio non necessario">Servizio non necessario</option>
+                        <option value="Altro">Altro</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="skipNotes" class="form-label">Note aggiuntive:</label>
+                    <textarea class="form-control" id="skipNotes" rows="2" placeholder="Note opzionali..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-warning" id="confirmSkip">Salta</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per posticipare follow-up -->
+<div class="modal fade" id="postponeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Posticipa Follow-up</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newDate" class="form-label">Nuova data:</label>
+                    <input type="date" class="form-control" id="newDate" min="{{ data.today.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="postponeReason" class="form-label">Motivo:</label>
+                    <select class="form-select" id="postponeReason">
+                        <option value="Cliente non disponibile">Cliente non disponibile</option>
+                        <option value="Rinvio su richiesta cliente">Rinvio su richiesta cliente</option>
+                        <option value="Problemi tecnici">Problemi tecnici</option>
+                        <option value="Altro">Altro</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="postponeNotes" class="form-label">Note aggiuntive:</label>
+                    <textarea class="form-control" id="postponeNotes" rows="2" placeholder="Note opzionali..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-info" id="confirmPostpone">Posticipa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per visualizzare note -->
+<div class="modal fade" id="notesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Note Follow-up</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="notesContent" style="white-space: pre-wrap;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentFollowupId = null;
+
+function completeFollowup(followupId) {
+    currentFollowupId = followupId;
+    $('#completeModal').modal('show');
+}
+
+function skipFollowup(followupId) {
+    currentFollowupId = followupId;
+    $('#skipModal').modal('show');
+}
+
+function postponeFollowup(followupId) {
+    currentFollowupId = followupId;
+    $('#postponeModal').modal('show');
+}
+
+function showNotes(notes) {
+    $('#notesContent').text(notes);
+    $('#notesModal').modal('show');
+}
+
+$('#confirmComplete').click(function() {
+    const notes = $('#completionNotes').val();
+    
+    $.ajax({
+        url: `/admin/service/complete_followup/${currentFollowupId}`,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ notes: notes }),
+        success: function(response) {
+            if (response.success) {
+                $('#completeModal').modal('hide');
+                location.reload();
+            } else {
+                alert('Errore: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Errore nella comunicazione con il server');
+        }
+    });
+});
+
+$('#confirmSkip').click(function() {
+    const reason = $('#skipReason').val();
+    const notes = $('#skipNotes').val();
+    const fullReason = notes ? `${reason} - ${notes}` : reason;
+    
+    $.ajax({
+        url: `/admin/service/skip_followup/${currentFollowupId}`,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ reason: fullReason }),
+        success: function(response) {
+            if (response.success) {
+                $('#skipModal').modal('hide');
+                location.reload();
+            } else {
+                alert('Errore: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Errore nella comunicazione con il server');
+        }
+    });
+});
+
+$('#confirmPostpone').click(function() {
+    const newDate = $('#newDate').val();
+    const reason = $('#postponeReason').val();
+    const notes = $('#postponeNotes').val();
+    const fullReason = notes ? `${reason} - ${notes}` : reason;
+    
+    if (!newDate) {
+        alert('Seleziona una nuova data');
+        return;
+    }
+    
+    $.ajax({
+        url: `/admin/service/postpone_followup/${currentFollowupId}`,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ 
+            new_date: newDate,
+            reason: fullReason
+        }),
+        success: function(response) {
+            if (response.success) {
+                $('#postponeModal').modal('hide');
+                location.reload();
+            } else {
+                alert('Errore: ' + response.error);
+            }
+        },
+        error: function() {
+            alert('Errore nella comunicazione con il server');
+        }
+    });
+});
+</script>
+{% endblock %}

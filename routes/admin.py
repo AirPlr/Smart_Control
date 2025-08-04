@@ -48,11 +48,20 @@ def dashboard():
         recent_activity = _get_recent_activity()
         system_health = _get_system_health()
         
+        # Follow-up in ritardo per dashboard
+        from models.followup import FollowUp
+        from datetime import datetime
+        overdue_followups = FollowUp.query.filter(
+            FollowUp.done == False,
+            FollowUp.data_prevista < datetime.now()
+        ).order_by(FollowUp.data_prevista.asc()).all()
+        
         data.update({
             'recent_activity': recent_activity,
             'system_health': system_health,
             'total_appointments': Appointment.query.count(),
-            'recent_appointments': Appointment.query.order_by(Appointment.data_appuntamento.desc()).limit(10).all()
+            'recent_appointments': Appointment.query.order_by(Appointment.data_appuntamento.desc()).limit(10).all(),
+            'overdue_followups': overdue_followups
         })
         
         print(f"Dati completi per template: {list(data.keys())}")
@@ -954,4 +963,183 @@ def save_theme_settings():
         return jsonify({
             'success': False,
             'error': f'Errore nel salvataggio: {str(e)}'
+        }), 500
+
+# === SEZIONE SERVICE - GESTIONE FOLLOW-UP ===
+
+@bp.route('/service')
+@login_required
+@admin_required
+def service():
+    """Gestione follow-up e servizi post-vendita"""
+    try:
+        from models.followup import FollowUp
+        from models.appointment import Appointment
+        from datetime import datetime, timedelta
+        
+        # Follow-up pendenti
+        pending_followups = FollowUp.query.filter_by(done=False).order_by(FollowUp.data_prevista.asc()).all()
+        
+        # Follow-up in scadenza (prossimi 7 giorni)
+        today = datetime.now()
+        next_week = today + timedelta(days=7)
+        upcoming_followups = FollowUp.query.filter(
+            FollowUp.done == False,
+            FollowUp.data_prevista >= today,
+            FollowUp.data_prevista <= next_week
+        ).order_by(FollowUp.data_prevista.asc()).all()
+        
+        # Follow-up in ritardo
+        overdue_followups = FollowUp.query.filter(
+            FollowUp.done == False,
+            FollowUp.data_prevista < today
+        ).order_by(FollowUp.data_prevista.asc()).all()
+        
+        # Statistiche
+        total_followups = FollowUp.query.count()
+        completed_followups = FollowUp.query.filter_by(done=True).count()
+        completion_rate = (completed_followups / total_followups * 100) if total_followups > 0 else 0
+        
+        data = {
+            'pending_followups': pending_followups,
+            'upcoming_followups': upcoming_followups,
+            'overdue_followups': overdue_followups,
+            'total_followups': total_followups,
+            'completed_followups': completed_followups,
+            'completion_rate': round(completion_rate, 1),
+            'today': today
+        }
+        
+        return render_template('admin/service.html', data=data)
+        
+    except Exception as e:
+        flash(f'Errore nel caricamento servizi: {str(e)}', 'danger')
+        return redirect(url_for('admin.dashboard'))
+
+@bp.route('/service/complete_followup/<int:followup_id>', methods=['POST'])
+@login_required
+@admin_required
+def complete_followup(followup_id):
+    """Marca un follow-up come completato"""
+    try:
+        from models.followup import FollowUp
+        from models.user import db
+        
+        followup = FollowUp.query.get_or_404(followup_id)
+        
+        if followup.done:
+            return jsonify({'success': False, 'error': 'Follow-up già completato'})
+        
+        # Ottieni note dalla richiesta
+        data = request.get_json() or {}
+        completion_notes = data.get('notes', '')
+        
+        # Marca come completato
+        followup.done = True
+        
+        # Aggiungi note di completamento
+        completion_info = f"\n\n--- COMPLETATO il {datetime.now().strftime('%d/%m/%Y alle %H:%M')} ---\n{completion_notes}"
+        followup.note = (followup.note or "") + completion_info
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Follow-up completato con successo'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Errore nel completamento: {str(e)}'
+        }), 500
+
+@bp.route('/service/skip_followup/<int:followup_id>', methods=['POST'])
+@login_required
+@admin_required
+def skip_followup(followup_id):
+    """Marca un follow-up come saltato"""
+    try:
+        from models.followup import FollowUp
+        from models.user import db
+        from datetime import datetime
+        
+        followup = FollowUp.query.get_or_404(followup_id)
+        
+        if followup.done:
+            return jsonify({'success': False, 'error': 'Follow-up già completato'})
+        
+        # Ottieni motivo dalla richiesta
+        data = request.get_json() or {}
+        skip_reason = data.get('reason', 'Nessun motivo specificato')
+        
+        # Marca come completato ma con nota di salto
+        followup.done = True
+        
+        # Aggiungi note di salto
+        skip_info = f"\n\n--- SALTATO il {datetime.now().strftime('%d/%m/%Y alle %H:%M')} ---\nMotivo: {skip_reason}"
+        followup.note = (followup.note or "") + skip_info
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Follow-up saltato con successo'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Errore nel salto: {str(e)}'
+        }), 500
+
+@bp.route('/service/postpone_followup/<int:followup_id>', methods=['POST'])
+@login_required
+@admin_required
+def postpone_followup(followup_id):
+    """Posticipa un follow-up"""
+    try:
+        from models.followup import FollowUp
+        from models.user import db
+        from datetime import datetime
+        
+        followup = FollowUp.query.get_or_404(followup_id)
+        
+        if followup.done:
+            return jsonify({'success': False, 'error': 'Non è possibile posticipare un follow-up completato'})
+        
+        # Ottieni nuova data dalla richiesta
+        data = request.get_json() or {}
+        new_date_str = data.get('new_date')
+        reason = data.get('reason', 'Nessun motivo specificato')
+        
+        if not new_date_str:
+            return jsonify({'success': False, 'error': 'Data non specificata'})
+        
+        new_date = datetime.strptime(new_date_str, '%Y-%m-%d')
+        
+        if new_date <= datetime.now():
+            return jsonify({'success': False, 'error': 'La nuova data deve essere futura'})
+        
+        old_date = followup.data_prevista
+        followup.data_prevista = new_date
+        
+        # Aggiungi note di posticipo
+        postpone_info = f"\n\n--- POSTICIPATO il {datetime.now().strftime('%d/%m/%Y alle %H:%M')} ---\nDa: {old_date.strftime('%d/%m/%Y')}\nA: {new_date.strftime('%d/%m/%Y')}\nMotivo: {reason}"
+        followup.note = (followup.note or "") + postpone_info
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Follow-up posticipato al {new_date.strftime("%d/%m/%Y")}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Errore nel posticipo: {str(e)}'
         }), 500

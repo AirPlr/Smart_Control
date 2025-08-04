@@ -107,9 +107,10 @@
             <div class="mb-3">
                 <label class="form-label">Stato</label>
                 <select class="form-select" name="stato" id="stato" required>
-                    <option value="concluso">Concluso</option>
-                    <option value="da richiamare">Da Richiamare</option>
-                    <option value="non richiamare">Non Richiamare</option>
+                    <option value="completato">Completato</option>
+                    <option value="completato da richiamare">Completato da Richiamare</option>
+                    <option value="saltato da richiamare">Saltato da Richiamare</option>
+                    <option value="saltato da non richiamare">Saltato da Non Richiamare</option>
                 </select>
             </div>
             <div class="mb-3" id="recallDateContainer" style="display: none;">
@@ -143,7 +144,7 @@
 <script>
     document.getElementById('stato').addEventListener('change', function () {
         var recallDateContainer = document.getElementById('recallDateContainer');
-        if (this.value === 'da richiamare') {
+        if (this.value === 'completato da richiamare' || this.value === 'saltato da richiamare') {
             recallDateContainer.style.display = 'block';
         } else {
             recallDateContainer.style.display = 'none';

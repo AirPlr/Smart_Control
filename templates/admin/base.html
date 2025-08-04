@@ -46,6 +46,11 @@
                                 <i class="fas fa-calendar-alt"></i>
                                 Appuntamenti
                             </a>
+                            <a class="admin-nav-link {% if request.endpoint == 'admin.service' %}active{% endif %}" 
+                               href="{{ url_for('admin.service') }}">
+                                <i class="fas fa-tools"></i>
+                                Service
+                            </a>
                             <a class="admin-nav-link {% if request.endpoint == 'admin.reports' %}active{% endif %}" 
                                href="{{ url_for('admin.reports') if url_for('admin.reports') else '#' }}">
                                 <i class="fas fa-chart-bar"></i>

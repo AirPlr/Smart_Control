@@ -229,7 +229,15 @@
                                                 <br><small class="text-muted">{{ appointment.telefono }}</small>
                                             {% endif %}
                                         </td>
-                                        <td>{{ appointment.consulente.nome if appointment.consulente else 'N/A' }}</td>
+                                        <td>
+                                            {% if appointment.consultants %}
+                                                {% for consultant in appointment.consultants %}
+                                                    <span class="badge bg-info me-1">{{ consultant.nome }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">Nessuno</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             <small>{{ appointment.data_appuntamento.strftime('%d/%m/%Y') }}</small>
                                             <br><small class="text-muted">{{ appointment.data_appuntamento.strftime('%H:%M') }}</small>
