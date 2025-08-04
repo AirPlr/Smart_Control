@@ -65,22 +65,8 @@ apt install -y \
     libffi-dev \
     liblzma-dev
 
-# Installa Python 3.11 se non presente
-log "Verifica installazione Python 3.11..."
-if ! command -v python3.11 &> /dev/null; then
-    log "Installazione Python 3.11..."
-    add-apt-repository ppa:deadsnakes/ppa -y
-    apt update
-    apt install -y python3.11 python3.11-venv python3.11-dev python3.11-distutils
-fi
 
-# Installa pip per Python 3.11
-log "Installazione pip per Python 3.11..."
-curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
 
-# Verifica installazione Python
-python3.11 --version
-python3.11 -m pip --version
 
 # Installa Node.js (per eventuali dipendenze frontend)
 log "Installazione Node.js..."
