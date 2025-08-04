@@ -120,13 +120,13 @@ class ClientService:
             
             # Verifica se nuovo telefono è già in uso
             existing = Client.query.filter(
-                Client.phone == new_phone,
+                Client.numero_telefono == new_phone,
                 Client.id != client_id
             ).first()
             if existing:
                 raise ValueError(f"Telefono {new_phone} già utilizzato da altro cliente")
             
-            client.phone = new_phone
+            client.numero_telefono = new_phone
         
         client.updated_at = datetime.now()
         client.updated_by = user_id
@@ -150,7 +150,7 @@ class ClientService:
         
         # Trova tutti gli appuntamenti correlati per telefono
         appointments = Appointment.query.filter_by(
-            numero_telefono=client.phone
+            numero_telefono=client.numero_telefono
         ).order_by(Appointment.data_appuntamento.desc()).all()
         
         # Follow-up correlati
@@ -198,7 +198,7 @@ class ClientService:
         return Client.query.filter(
             db.or_(
                 Client.name.ilike(search_pattern),
-                Client.phone.ilike(search_pattern),
+                Client.numero_telefono.ilike(search_pattern),
                 Client.email.ilike(search_pattern)
             )
         ).order_by(Client.name.asc()).limit(limit).all()

@@ -305,7 +305,7 @@ class ClientService:
         
         # Trova tutti gli appuntamenti correlati
         appointments = Appointment.query.filter_by(
-            numero_telefono=client.phone
+            numero_telefono=client.numero_telefono
         ).order_by(Appointment.data_appuntamento.desc()).all()
         
         # Follow-up correlati
