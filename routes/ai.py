@@ -2,12 +2,25 @@ from flask import Blueprint, request, jsonify, render_template, Response
 from flask_login import login_required, current_user
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from services.ai_service import ai_service, voice_processor
 import json
 import logging
 import base64
 
-logger = logging.getLogger(__name__)
+# Prova prima il nuovo servizio, poi fallback al vecchio
+try:
+    from services.ai_service_new import ai_service, voice_processor
+    logger = logging.getLogger(__name__)
+    logger.info("✅ Caricato nuovo servizio AI con Ollama")
+except ImportError:
+    try:
+        from services.ai_service import ai_service, voice_processor
+        logger = logging.getLogger(__name__)
+        logger.warning("⚠️ Fallback al vecchio servizio AI")
+    except ImportError:
+        logger = logging.getLogger(__name__)
+        logger.error("❌ Nessun servizio AI disponibile")
+        ai_service = None
+        voice_processor = None
 
 bp = Blueprint('ai', __name__, url_prefix='/ai')
 
@@ -18,7 +31,10 @@ limiter = Limiter(key_func=get_remote_address)
 @login_required
 @limiter.limit("30 per minute")
 def chat():
-    """Endpoint per chat con AI"""
+    """Endpoint per chat con AI - Versione avanzata con Ollama"""
+    
+    if not ai_service:
+        return jsonify({'error': 'Servizio AI non disponibile'}), 503
     
     try:
         data = request.get_json()
@@ -27,24 +43,36 @@ def chat():
         if not message:
             return jsonify({'error': 'Messaggio richiesto'}), 400
         
-        # Ottieni contesto
+        # Ottieni contesto avanzato
         context = ai_service.get_context_data()
-        context['page_context'] = data.get('page_context', '')
+        context['page_context'] = data.get('page_context', 'dashboard')
         
-        # Log interazione
-        logger.info(f"AI Chat - User: {current_user.username}, Message: {message[:100]}...")
+        # Log interazione con più dettagli
+        logger.info(f"AI Chat - User: {current_user.username} (ID: {current_user.id}), "
+                   f"Page: {context['page_context']}, Message: {message[:100]}...")
         
         # Genera risposta in streaming
         response_chunks = []
-        for chunk in ai_service.generate_response_stream(message, context):
-            response_chunks.append(chunk)
+        try:
+            for chunk in ai_service.generate_response_stream(message, context):
+                response_chunks.append(chunk)
+        except Exception as e:
+            logger.error(f"Errore durante streaming AI: {e}")
+            # Tentativo di recovery
+            response_chunks = ["Mi dispiace, si è verificato un errore. Riprova più tardi."]
         
         response_text = ''.join(response_chunks)
+        
+        # Log della risposta per analisi
+        logger.info(f"AI Response length: {len(response_text)} chars")
         
         return jsonify({
             'response': response_text,
             'timestamp': context['timestamp'],
-            'user_role': context['user_role']
+            'user_role': context['user_role'],
+            'model_used': 'llama3.2:3b',
+            'api_access': True,
+            'success': True
         })
     
     except Exception as e:

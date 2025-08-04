@@ -8,6 +8,10 @@ Flask-Migrate==4.0.5
 Flask-SocketIO==5.3.6
 eventlet==0.33.3
 
+# AI Assistant con Ollama - NUOVO
+ollama==0.3.3
+requests==2.31.0
+
 # AI Assistant dependencies - Opzionali (per IA locale)
 SpeechRecognition==3.10.0
 pyttsx3==2.90
@@ -31,6 +35,9 @@ cryptography==41.0.7
 # Database
 SQLAlchemy==2.0.23
 
+# HTTP requests
+requests==2.31.0  # Spostato sopra per AI
+
 # Data processing & Export
 XlsxWriter==3.1.9
 reportlab==4.0.6
@@ -38,9 +45,6 @@ python-dateutil==2.8.2
 
 # System monitoring
 psutil==5.9.6
-
-# HTTP requests
-requests==2.31.0
 
 # Development dependencies
 python-dotenv==1.0.0
