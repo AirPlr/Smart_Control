@@ -51,6 +51,7 @@ class AppointmentService:
             nominativi_raccolti=max(0, int(data.get('nominativi_raccolti', 0))),
             appuntamenti_personali=max(0, int(data.get('appuntamenti_personali', 0))),
             venduto=bool(data.get('venduto', False)),
+            include_in_reports=bool(data.get('include_in_reports', True)),
             data_appuntamento=data_appuntamento,
             data_richiamo=data_richiamo
         )
@@ -96,7 +97,8 @@ class AppointmentService:
         # Aggiorna campi modificabili
         updatable_fields = {
             'nome_cliente', 'indirizzo', 'numero_telefono', 'note', 
-            'tipologia', 'stato', 'nominativi_raccolti', 'appuntamenti_personali'
+            'tipologia', 'stato', 'nominativi_raccolti', 'appuntamenti_personali',
+            'include_in_reports'
         }
         
         for field in updatable_fields:

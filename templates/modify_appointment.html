@@ -16,7 +16,7 @@
     <form action="{{ url_for('main.modify_appointment', id=appointment.id) }}" method="POST">
         <div class="mb-3">
             <label class="form-label">Nome Cliente</label>
-            <input list="client-list" class="form-control" name="nome_cliente" id="nome_cliente" required oninput="checkClient(this)">
+            <input list="client-list" class="form-control" name="nome_cliente" id="nome_cliente" value="{{ appointment.nome_cliente }}" required oninput="checkClient(this)">
             <datalist id="client-list">
                 {% for client in clients %}
                 <option value="{{ client.nome }}"></option>
@@ -61,6 +61,17 @@
             const consultantsInput = document.getElementById("consultants-input");
             let selectedConsultants = [];
 
+            // Pre-popola i consulenti già associati all'appuntamento
+            {% if appointment.consultants %}
+                {% for consultant in appointment.consultants %}
+                    selectedConsultants.push({ 
+                        id: "{{ consultant.id }}", 
+                        name: "{{ consultant.nome }}" 
+                    });
+                {% endfor %}
+                updateConsultantList();
+            {% endif %}
+
             consultantSelect.addEventListener("change", function () {
                 const consultantId = this.value;
                 const consultantName = this.options[this.selectedIndex].text;
@@ -96,51 +107,63 @@
 
         <div class="mb-3">
             <label class="form-label">Indirizzo</label>
-            <input type="text" class="form-control" name="indirizzo">
+            <input type="text" class="form-control" name="indirizzo" value="{{ appointment.indirizzo or '' }}">
         </div>
         <div class="mb-3">
             <label class="form-label">Numero di Telefono</label>
-            <input type="tel" class="form-control" name="numero_telefono" required>
+            <input type="tel" class="form-control" name="numero_telefono" value="{{ appointment.numero_telefono }}" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Note</label>
-            <textarea class="form-control" name="note"></textarea>
+            <textarea class="form-control" name="note">{{ appointment.note or '' }}</textarea>
         </div>
         <div class="mb-3">
             <label class="form-label">Tipologia di Appuntamento</label>
             <select class="form-select" name="tipologia" required>
-                <option value="Assistenza">Assistenza</option>
-                <option value="Dimostrazione">Dimostrazione</option>
-                <option value="Consumabili">Consumabili</option>
+                <option value="Assistenza" {% if appointment.tipologia == 'Assistenza' %}selected{% endif %}>Assistenza</option>
+                <option value="Dimostrazione" {% if appointment.tipologia == 'Dimostrazione' %}selected{% endif %}>Dimostrazione</option>
+                <option value="Consumabili" {% if appointment.tipologia == 'Consumabili' %}selected{% endif %}>Consumabili</option>
             </select>
         </div>
         <div class="mb-3">
             <label class="form-label">Stato</label>
             <select class="form-select" name="stato" id="stato" required>
-                <option value="concluso">Concluso</option>
-                <option value="da richiamare">Da Richiamare</option>
-                <option value="non richiamare">Non Richiamare</option>
+                <option value="concluso" {% if appointment.stato == 'concluso' %}selected{% endif %}>Concluso</option>
+                <option value="da richiamare" {% if appointment.stato == 'da richiamare' %}selected{% endif %}>Da Richiamare</option>
+                <option value="non richiamare" {% if appointment.stato == 'non richiamare' %}selected{% endif %}>Non Richiamare</option>
             </select>
         </div>
-        <div class="mb-3" id="recallDateContainer" style="display: none;">
+        <div class="mb-3" id="recallDateContainer" style="display: {% if appointment.stato == 'da richiamare' %}block{% else %}none{% endif %};">
             <label class="form-label">Data di Richiamo</label>
-            <input type="date" class="form-control" name="data_richiamo">
+            <input type="date" class="form-control" name="data_richiamo" value="{% if appointment.data_richiamo %}{{ appointment.data_richiamo.strftime('%Y-%m-%d') }}{% endif %}">
         </div>
         <div class="mb-3">
             <label class="form-label">Contatti Raccolti</label>
-            <input type="number" class="form-control" name="nominativi_raccolti" value="0">
+            <input type="number" class="form-control" name="nominativi_raccolti" value="{{ appointment.nominativi_raccolti }}">
         </div>
         <div class="mb-3">
             <label class="form-label">Appuntamenti Personali Presi</label>
-            <input type="number" class="form-control" name="appuntamenti_personali" value="0">
+            <input type="number" class="form-control" name="appuntamenti_personali" value="{{ appointment.appuntamenti_personali }}">
         </div>
-        <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" name="venduto" id="venduto">
-            <label class="form-check-label" for="venduto">Vendita Conclusa</label>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="venduto" id="venduto" {% if appointment.venduto %}checked{% endif %}>
+                    <label class="form-check-label" for="venduto">Vendita Conclusa</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="include_in_reports" id="include_in_reports" 
+                           {% if appointment.include_in_reports %}checked{% endif %}>
+                    <label class="form-check-label" for="include_in_reports">Includi nei Report</label>
+                    <small class="form-text text-muted d-block">Deseleziona per escludere dai report</small>
+                </div>
+            </div>
         </div>
         <div class="mb-3">
             <label class="form-label">Data Appuntamento</label>
-            <input type="date" class="form-control" name="data_appuntamento" required>
+            <input type="date" class="form-control" name="data_appuntamento" value="{{ appointment.data_appuntamento.strftime('%Y-%m-%d') }}" required>
         </div>
         <button type="submit" class="btn btn-success w-100">Salva Modifiche</button>
     </form>
@@ -169,8 +192,9 @@ document.getElementById('stato').addEventListener('change', function () {
 document.addEventListener("DOMContentLoaded", function() {
     const tipologiaSelect = document.querySelector('select[name="tipologia"]');
     const vendutoCheckbox = document.getElementById('venduto');
+    const includeInReportsCheckbox = document.getElementById('include_in_reports');
 
-    function updateVenduto() {
+    function updateVendutoAndReports() {
         const tipologia = tipologiaSelect.value;
         if (tipologia === 'Consegna' || tipologia === 'Redemo') {
             vendutoCheckbox.checked = false;
@@ -178,10 +202,17 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
             vendutoCheckbox.disabled = false;
         }
+        
+        // Per i consumabili, suggerisci di escludere dai report
+        if (tipologia === 'Consumabili') {
+            includeInReportsCheckbox.checked = false;
+        } else {
+            includeInReportsCheckbox.checked = true;
+        }
     }
-    
-    tipologiaSelect.addEventListener('change', updateVenduto);
-    updateVenduto();
+
+    tipologiaSelect.addEventListener('change', updateVendutoAndReports);
+    updateVendutoAndReports();
 });
 </script>
 

@@ -266,6 +266,7 @@ def add_appointment():
                 'nominativi_raccolti': request.form.get('nominativi_raccolti', 0, type=int),
                 'appuntamenti_personali': request.form.get('appuntamenti_personali', 0, type=int),
                 'venduto': request.form.get('venduto') == 'on',
+                'include_in_reports': request.form.get('include_in_reports') == 'on',
                 'data_appuntamento': request.form.get('data_appuntamento'),
                 'data_richiamo': request.form.get('data_richiamo') if request.form.get('data_richiamo') else None
             }
@@ -337,6 +338,7 @@ def modify_appointment(id):
                 'nominativi_raccolti': request.form.get('nominativi_raccolti', 0, type=int),
                 'appuntamenti_personali': request.form.get('appuntamenti_personali', 0, type=int),
                 'venduto': request.form.get('venduto') == 'on',
+                'include_in_reports': request.form.get('include_in_reports') == 'on',
                 'data_appuntamento': request.form.get('data_appuntamento'),
                 'data_richiamo': request.form.get('data_richiamo') if request.form.get('data_richiamo') else None
             }

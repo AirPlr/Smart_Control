@@ -11,6 +11,7 @@ class Appointment(db.Model):
     note = db.Column(db.Text)
     tipologia = db.Column(db.String(20))
     stato = db.Column(db.String(20), nullable=False)  # "concluso", "da richiamare", "non richiamare"
+    include_in_reports = db.Column(db.Boolean, default=True)  # Se includere nei report
     nominativi_raccolti = db.Column(db.Integer, default=0)
     appuntamenti_personali = db.Column(db.Integer, default=0)
     venduto = db.Column(db.Boolean, default=False)
@@ -34,6 +35,7 @@ class Appointment(db.Model):
             'note': self.note,
             'tipologia': self.tipologia,
             'stato': self.stato,
+            'include_in_reports': self.include_in_reports,
             'nominativi_raccolti': self.nominativi_raccolti,
             'appuntamenti_personali': self.appuntamenti_personali,
             'venduto': self.venduto,

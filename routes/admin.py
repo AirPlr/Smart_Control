@@ -624,6 +624,7 @@ def generate_report():
         report_type = request.form.get('report_type')
         start_date = request.form.get('start_date')
         end_date = request.form.get('end_date')
+        include_excluded = request.form.get('include_excluded') == 'on'
         
         if not all([report_type, start_date, end_date]):
             return jsonify({'error': 'Tutti i campi sono obbligatori'}), 400
@@ -632,9 +633,16 @@ def generate_report():
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
         
         if report_type == 'appointments':
-            appointments = Appointment.query.filter(
+            # Costruisci query base
+            query = Appointment.query.filter(
                 Appointment.data_appuntamento.between(start_date, end_date)
-            ).all()
+            )
+            
+            # Applica filtro include_in_reports solo se non si vogliono includere gli esclusi
+            if not include_excluded:
+                query = query.filter(Appointment.include_in_reports == True)
+                
+            appointments = query.all()
             
             data = {
                 'period': f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}",
@@ -659,8 +667,10 @@ def generate_report():
             consultant_stats = []
             
             for consultant in consultants:
+                # Filtra appuntamenti per data e include_in_reports se necessario
                 consultant_appointments = [a for a in consultant.appointments 
-                                        if start_date <= a.data_appuntamento <= end_date]
+                                        if start_date <= a.data_appuntamento <= end_date
+                                        and (include_excluded or a.include_in_reports)]
                 
                 consultant_stats.append({
                     'nome': consultant.nome,
